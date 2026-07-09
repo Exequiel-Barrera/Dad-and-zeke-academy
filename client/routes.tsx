@@ -1,6 +1,6 @@
 import { createRoutesFromElements, Route } from 'react-router'
 
-import App from './components/App.tsx'
+import Layout from './components/layout/Layout.tsx'
 import Home from './pages/Home.tsx'
 import Reading from './pages/Reading.tsx'
 import Writing from './pages/Writing.tsx'
@@ -8,11 +8,14 @@ import Maths from './pages/Maths.tsx'
 import Discovery from './pages/Discovery.tsx'
 import Character from './pages/Character.tsx'
 import Rewards from './pages/Rewards.tsx'
+import ReadingMission from './pages/ReadingMission.tsx'
 
 export default createRoutesFromElements(
-  <Route path="/" element={<App />}>
+  <Route path="/" element={<Layout />}>
+    
     <Route index element={<Home />} />
     <Route path="reading" element={<Reading />} />
+    <Route path="reading/mission-1" element={<ReadingMission />} />
     <Route path="writing" element={<Writing />} />
     <Route path="maths" element={<Maths />} />
     <Route path="discovery" element={<Discovery />} />
