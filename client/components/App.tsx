@@ -1,7 +1,7 @@
-import Home from '../pages/Home.tsx'
+import { Outlet } from 'react-router'
 
 function App() {
-  return <Home />
+  return <Outlet />
 }
 
 export default App
