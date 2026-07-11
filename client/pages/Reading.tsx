@@ -1,11 +1,14 @@
 import { Link } from 'react-router'
+import Rex from '../components/characters/Rex.tsx'
 
 function Reading() {
   return (
     <section className="min-h-[80vh] rounded-3xl bg-green-100 p-10 shadow-lg">
       <div className="text-center">
-        <p className="text-7xl">🌲📖🦉</p>
-
+        <Rex
+  size="medium"
+  message="Welcome to Reading Forest, Explorer Zeke! Are you ready for today's mission?"
+/>
         <h1 className="mt-4 text-6xl font-bold text-green-900">
           Reading Forest
         </h1>
