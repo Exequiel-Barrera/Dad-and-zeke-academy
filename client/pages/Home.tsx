@@ -1,12 +1,15 @@
 import Header from '../components/Header.tsx'
+
 import StatsCard from '../components/StatsCard.tsx'
 import MissionCard from '../components/MissionCard.tsx'
-import NavigationCards from '../components/NavigationCards.tsx'
+
 import GreatLearningTree from '../components/tree/GreatLearningTree.tsx'
 import WorldMap from '../components/map/WorldMap.tsx'
-
+import { usePlayer } from '../context/PlayerContext'
 
 function Home() {
+
+  const { player } = usePlayer()
   return (
     <main className="min-h-screen bg-sky-100 p-8">
       <Header />
@@ -14,7 +17,7 @@ function Home() {
 
 <div className="mx-auto mt-10 max-w-4xl space-y-8">
 
-  <GreatLearningTree stars={3} />
+  <GreatLearningTree stars={player.stars} />
 
   <StatsCard />
 

@@ -6,17 +6,17 @@ function GreatLearningTree({ stars }: GreatLearningTreeProps) {
   let stage = '🌱'
   let message = 'A tiny seed of learning.'
 
-  if (stars >= 10) {
+  if (stars >= 3) {
     stage = '🌿'
     message = 'Your learning is growing!'
   }
 
-  if (stars >= 25) {
+  if (stars >= 6) {
     stage = '🌳'
     message = 'The tree is becoming strong.'
   }
 
-  if (stars >= 50) {
+  if (stars >= 9) {
     stage = '🌳✨'
     message = 'Magic fills the branches!'
   }

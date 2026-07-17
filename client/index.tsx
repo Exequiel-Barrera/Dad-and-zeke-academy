@@ -5,6 +5,8 @@ import { RouterProvider } from 'react-router/dom'
 import { createBrowserRouter } from 'react-router'
 import routes from './routes.tsx'
 import { Auth0Provider } from '@auth0/auth0-react'
+import { PlayerProvider } from './context/PlayerContext'
+
 
 const router = createBrowserRouter(routes)
 const queryClient = new QueryClient()
@@ -22,10 +24,12 @@ document.addEventListener('DOMContentLoaded', () => {
         audience: '',
       }}
     >
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-        <ReactQueryDevtools />
-      </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+     <PlayerProvider>
+     <RouterProvider router={router} />
+     <ReactQueryDevtools />
+     </PlayerProvider>
+  </QueryClientProvider>
     </Auth0Provider>,
   )
 })

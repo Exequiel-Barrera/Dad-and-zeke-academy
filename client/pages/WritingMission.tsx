@@ -1,14 +1,25 @@
 import { useState } from 'react'
 import Pandalolo from '../components/characters/Pandalolo'
+import { usePlayer } from '../context/PlayerContext'
 
 function WritingMission() {
+  const { addStars } = usePlayer()
   const [answer, setAnswer] = useState('')
   const [submitted, setSubmitted] = useState(false)
-
+  const [rewardGiven, setRewardGiven] = useState(false)
   const correctSentence = 'The dinosaur is green.'
 
   const isCorrect =
     answer.trim().toLowerCase() === correctSentence.toLowerCase()
+
+    function checkAnswer() {
+  setSubmitted(true)
+
+  if (isCorrect && !rewardGiven) {
+    addStars(3)
+    setRewardGiven(true)
+  }
+}
 
   return (
     <main className="min-h-screen bg-purple-100 p-8">
@@ -28,13 +39,13 @@ function WritingMission() {
           <p className="mt-6 text-center text-2xl">
             Type this sentence exactly:
           </p>
-<button
-  type="button"
-  onClick={readInstructions}
-  className="mx-auto mt-6 flex items-center gap-3 rounded-2xl bg-blue-600 px-6 py-4 text-xl font-bold text-white hover:bg-blue-700"
->
-  🔊 Read Instructions
-</button>
+           <button
+             type="button"
+              onClick={readInstructions}
+               className="mx-auto mt-6 flex items-center gap-3 rounded-2xl bg-blue-600 px-6 py-4 text-xl font-bold text-white hover:bg-blue-700"
+             >
+               🔊 Read Instructions
+          </button>
           <p className="mt-8 rounded-2xl bg-purple-50 p-6 text-center text-4xl font-bold">
             The dinosaur is green.
           </p>
@@ -48,7 +59,7 @@ function WritingMission() {
 
           <button
             type="button"
-            onClick={() => setSubmitted(true)}
+            onClick={checkAnswer}
             className="mt-8 w-full rounded-2xl bg-purple-700 py-5 text-2xl font-bold text-white hover:bg-purple-800"
           >
             Check My Sentence
