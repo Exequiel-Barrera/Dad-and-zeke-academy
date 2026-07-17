@@ -3,7 +3,7 @@ import StatsCard from '../components/StatsCard.tsx'
 import MissionCard from '../components/MissionCard.tsx'
 import NavigationCards from '../components/NavigationCards.tsx'
 import GreatLearningTree from '../components/tree/GreatLearningTree.tsx'
-
+import WorldMap from '../components/map/WorldMap.tsx'
 
 
 function Home() {
@@ -20,7 +20,7 @@ function Home() {
 
   <MissionCard />
 
-  <NavigationCards />
+  <WorldMap />
 
 </div>
     </main>
