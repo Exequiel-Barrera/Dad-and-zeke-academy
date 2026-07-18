@@ -55,3 +55,20 @@ export const missions = [
     reward: 3,
   },
 ]
+export type WritingMission = {
+  id: string
+  title: string
+  instruction: string
+  sentence: string
+  stars: number
+}
+
+export const writingMissions: WritingMission[] = [
+  {
+    id: 'writing-1',
+    title: 'The Green Dinosaur',
+    instruction: 'Type this sentence exactly.',
+    sentence: 'The dinosaur is green.',
+    stars: 3,
+  },
+]

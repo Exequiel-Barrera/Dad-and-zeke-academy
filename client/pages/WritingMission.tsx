@@ -1,22 +1,27 @@
 import { useState } from 'react'
 import Pandalolo from '../components/characters/Pandalolo'
 import { usePlayer } from '../context/PlayerContext'
+import { writingMissions } from '../data/missions'
 
 function WritingMission() {
-  const { addStars } = usePlayer()
+  const { player, addStars, completeMission } = usePlayer()
+  const mission = writingMissions[0]
+  const missionCompleted =
+  player.completedMissions.includes('writing-1')
   const [answer, setAnswer] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [rewardGiven, setRewardGiven] = useState(false)
-  const correctSentence = 'The dinosaur is green.'
+  const correctSentence = mission.sentence
 
   const isCorrect =
     answer.trim().toLowerCase() === correctSentence.toLowerCase()
 
-    function checkAnswer() {
+  function checkAnswer() {
   setSubmitted(true)
 
   if (isCorrect && !rewardGiven) {
-    addStars(3)
+    addStars(mission.stars)
+    completeMission(mission.id)
     setRewardGiven(true)
   }
 }
@@ -33,11 +38,11 @@ function WritingMission() {
         <section className="mt-10 rounded-3xl bg-white p-10 shadow-xl">
 
           <h1 className="text-center text-5xl font-bold text-purple-900">
-            ✏️ Mission 1
+          ✏️ {mission.title}
           </h1>
 
           <p className="mt-6 text-center text-2xl">
-            Type this sentence exactly:
+          {mission.instruction}
           </p>
            <button
              type="button"
@@ -47,7 +52,7 @@ function WritingMission() {
                🔊 Read Instructions
           </button>
           <p className="mt-8 rounded-2xl bg-purple-50 p-6 text-center text-4xl font-bold">
-            The dinosaur is green.
+            {mission.sentence}
           </p>
 
           <input
@@ -57,13 +62,18 @@ function WritingMission() {
             placeholder="Type your sentence here..."
           />
 
-          <button
-            type="button"
-            onClick={checkAnswer}
-            className="mt-8 w-full rounded-2xl bg-purple-700 py-5 text-2xl font-bold text-white hover:bg-purple-800"
-          >
-            Check My Sentence
-          </button>
+      <button
+  type="button"
+  onClick={checkAnswer}
+  disabled={missionCompleted}
+  className={`mt-8 w-full rounded-2xl py-5 text-2xl font-bold text-white ${
+    missionCompleted
+      ? 'cursor-not-allowed bg-gray-400'
+      : 'bg-purple-700 hover:bg-purple-800'
+  }`}
+>
+  {missionCompleted ? 'Mission Completed ✅' : 'Check My Sentence'}
+</button>
 
           {submitted && (
             <div className="mt-8 text-center">

@@ -11,6 +11,7 @@ import { player as initialPlayer, Player } from '../data/player'
 type PlayerContextType = {
   player: Player
   addStars: (amount: number) => void
+  completeMission:(missionId:string)=> void
 }
 
 const PlayerContext = createContext<PlayerContextType | null>(null)
@@ -46,12 +47,24 @@ export function PlayerProvider({ children }: ProviderProps) {
       stars: current.stars + amount,
     }))
   }
+function completeMission(missionId: string) {
+  setPlayer((current) => {
+    if (current.completedMissions.includes(missionId)) {
+      return current
+    }
 
+    return {
+      ...current,
+      completedMissions: [...current.completedMissions, missionId],
+    }
+  })
+}
   return (
     <PlayerContext.Provider
       value={{
         player,
         addStars,
+        completeMission,
       }}
     >
       {children}
