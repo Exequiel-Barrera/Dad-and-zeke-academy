@@ -36,6 +36,7 @@ function WritingMission() {
 
   return (
     <MissionEngine
+    type="writing"
       missionId={currentMission.id}
       missionNumber={currentMission.number}
       title={currentMission.title}
