@@ -1,19 +1,22 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useParams } from 'react-router'
 
 import Rex from '../components/characters/Rex'
 import MissionLayout from '../components/mission/MissionLayout'
 import QuestionCard from '../components/mission/QuestionCard'
 import StoryCard from '../components/mission/StoryCard'
 import { usePlayer } from '../context/PlayerContext'
-import { missions } from '../data/missions'
+import { readingMissions } from '../data/missions'
 
 type MissionStage = 'story' | 'questions' | 'complete'
 
 function ReadingMission() {
-  const mission = missions[0]
-
+  const { missionId } = useParams()
   const { player, addStars, completeMission } = usePlayer()
+
+  const mission = readingMissions.find(
+    (readingMission) => readingMission.id === missionId,
+  )
 
   const [stage, setStage] = useState<MissionStage>('story')
   const [currentPage, setCurrentPage] = useState(0)
@@ -21,18 +24,29 @@ function ReadingMission() {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [starsEarned, setStarsEarned] = useState(0)
 
-  const missionId = 'reading-1'
+  if (!mission) {
+    return (
+      <main className="min-h-screen bg-green-100 p-8">
+        <p className="text-center text-3xl font-bold text-red-700">
+          Reading mission not found.
+        </p>
+      </main>
+    )
+  }
 
-  const missionCompleted =
-    player.completedMissions.includes(missionId)
+  const currentMission = mission
+
+  const missionCompleted = player.completedMissions.includes(
+    currentMission.id,
+  )
 
   const isLastStoryPage =
-    currentPage === mission.pages.length - 1
+    currentPage === currentMission.pages.length - 1
 
   const isLastQuestion =
-    currentQuestion === mission.questions.length - 1
+    currentQuestion === currentMission.questions.length - 1
 
-  const question = mission.questions[currentQuestion]
+  const question = currentMission.questions[currentQuestion]
 
   function handleAnswer(answer: string) {
     if (selectedAnswer !== null) {
@@ -47,29 +61,21 @@ function ReadingMission() {
   }
 
   function handleNextQuestion() {
-  if (isLastQuestion) {
-    const finalStars =
-      selectedAnswer === question.correct
-        ? starsEarned
-        : starsEarned
+    if (isLastQuestion) {
+      finishMission()
+      return
+    }
 
-    finishMission(finalStars)
-    return
+    setCurrentQuestion((questionNumber) => questionNumber + 1)
+    setSelectedAnswer(null)
   }
 
-  setCurrentQuestion(
-    (questionNumber) => questionNumber + 1,
-  )
-
-  setSelectedAnswer(null)
-}
-
-function finishMission(finalStars: number) {
+  function finishMission() {
     setStage('complete')
 
     if (!missionCompleted) {
-     addStars(finalStars)
-      completeMission(missionId)
+      addStars(starsEarned)
+      completeMission(currentMission.id)
     }
   }
 
@@ -83,8 +89,8 @@ function finishMission(finalStars: number) {
 
   return (
     <MissionLayout
-      missionNumber={1}
-      title={mission.title}
+      missionNumber={currentMission.number}
+      title={currentMission.title}
       mascot={
         <Rex
           size="small"
@@ -99,9 +105,9 @@ function finishMission(finalStars: number) {
       {stage === 'story' && (
         <div>
           <StoryCard
-            text={mission.pages[currentPage].text}
+            text={currentMission.pages[currentPage].text}
             pageNumber={currentPage + 1}
-            totalPages={mission.pages.length}
+            totalPages={currentMission.pages.length}
           />
 
           <div className="mt-8 flex items-center justify-between gap-4">
@@ -109,9 +115,7 @@ function finishMission(finalStars: number) {
               type="button"
               disabled={currentPage === 0}
               onClick={() =>
-                setCurrentPage(
-                  (pageNumber) => pageNumber - 1,
-                )
+                setCurrentPage((pageNumber) => pageNumber - 1)
               }
               className="rounded-xl bg-gray-300 px-6 py-3 text-lg font-bold disabled:opacity-40"
             >
@@ -122,9 +126,7 @@ function finishMission(finalStars: number) {
               <button
                 type="button"
                 onClick={() =>
-                  setCurrentPage(
-                    (pageNumber) => pageNumber + 1,
-                  )
+                  setCurrentPage((pageNumber) => pageNumber + 1)
                 }
                 className="rounded-xl bg-green-700 px-6 py-3 text-lg font-bold text-white hover:bg-green-800"
               >
@@ -147,7 +149,7 @@ function finishMission(finalStars: number) {
         <div>
           <p className="mb-4 text-center text-xl font-bold text-green-900">
             Question {currentQuestion + 1} of{' '}
-            {mission.questions.length}
+            {currentMission.questions.length}
           </p>
 
           <QuestionCard
@@ -190,7 +192,7 @@ function finishMission(finalStars: number) {
           </p>
 
           <p className="mt-4 text-3xl font-bold">
-            You earned {starsEarned} of {mission.reward} stars.
+            You earned {starsEarned} of {currentMission.reward} stars.
           </p>
 
           {missionCompleted && (

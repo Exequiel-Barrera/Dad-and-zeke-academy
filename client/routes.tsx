@@ -16,9 +16,14 @@ export default createRoutesFromElements(
     <Route index element={<Home />} />
 
     <Route path="reading" element={<Reading />} />
-    <Route path="reading/mission-1" element={<ReadingMission />} />
+
+    <Route
+      path="reading/mission/:missionId"
+      element={<ReadingMission />}
+    />
 
     <Route path="writing" element={<Writing />} />
+
     <Route
       path="writing/mission/:missionId"
       element={<WritingMission />}
