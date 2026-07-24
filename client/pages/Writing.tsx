@@ -1,52 +1,62 @@
-import Pandalolo from '../components/characters/Pandalolo'
-import AcademyMissionCard from '../components/AcademyMissionCard'
+import { Link } from 'react-router'
 
-import { writingMissions } from '../data/missions'
+import Pandalolo from '../components/characters/Pandalolo'
+import WorldMissionMap from '../components/world/WorldMissionMap'
 import { usePlayer } from '../context/PlayerContext'
+import { writingMissions } from '../data/missions'
 
 function Writing() {
   const { player } = usePlayer()
 
+  const mapMissions = writingMissions.map((mission) => ({
+    id: mission.id,
+    number: mission.number,
+    title: mission.title,
+    stars: mission.stars,
+  }))
+
+  const completedCount = writingMissions.filter((mission) =>
+    player.completedMissions.includes(mission.id),
+  ).length
+
   return (
-    <main className="min-h-screen bg-purple-100 p-8">
-      <div className="mx-auto max-w-4xl">
+    <section className="min-h-[80vh] rounded-3xl bg-purple-100 p-6 shadow-lg md:p-10">
+      <div className="text-center">
         <Pandalolo
           size="medium"
-          message="Welcome to the Writer's Workshop! Complete each mission to unlock the next one."
+          message="Welcome to Writing Mountain! Let's practice writing and unlock new adventures!"
         />
 
-        <section className="mt-10 rounded-3xl bg-white p-8 shadow-xl">
-          <h1 className="text-center text-4xl font-bold text-purple-900">
-            ✏️ Writing Missions
-          </h1>
+        <h1 className="mt-4 text-5xl font-bold text-purple-900 md:text-6xl">
+          Writing Mountain
+        </h1>
 
-          <div className="mt-8 space-y-5">
-            {writingMissions.map((mission, index) => {
-              const completed = player.completedMissions.includes(mission.id)
+        <p className="mx-auto mt-4 max-w-2xl text-xl md:text-2xl">
+          Follow the writing trail, complete each mission, and become a Writing
+          Champion.
+        </p>
 
-              const previousMission = writingMissions[index - 1]
-
-              const unlocked =
-                index === 0 ||
-                player.completedMissions.includes(previousMission.id)
-
-              return (
-                <AcademyMissionCard
-                  key={mission.id}
-                  id={mission.id}
-                  number={mission.number}
-                  title={mission.title}
-                  stars={mission.stars}
-                  completed={completed}
-                  unlocked={unlocked}
-                  worldPath="writing"
-                />
-              )
-            })}
-          </div>
-        </section>
+        <div className="mx-auto mt-6 inline-flex rounded-full bg-white px-6 py-3 text-xl font-bold text-purple-900 shadow">
+          Completed: {completedCount} of {writingMissions.length}
+        </div>
       </div>
-    </main>
+
+      <WorldMissionMap
+        missions={mapMissions}
+        completedMissions={player.completedMissions}
+        worldPath="writing"
+        theme="writing"
+      />
+
+      <div className="mt-12 text-center">
+        <Link
+          to="/"
+          className="text-xl font-bold text-purple-900 underline"
+        >
+          ← Back to Academy Home
+        </Link>
+      </div>
+    </section>
   )
 }
 

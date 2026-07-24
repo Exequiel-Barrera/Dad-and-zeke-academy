@@ -1,7 +1,7 @@
 import { Link } from 'react-router'
 
 import Rex from '../components/characters/Rex'
-import WorldMissionMap from '../components/mission/WorldMissionMap'
+import WorldMissionMap from '../components/world/WorldMissionMap'
 import { usePlayer } from '../context/PlayerContext'
 import { readingMissions } from '../data/missions'
 
