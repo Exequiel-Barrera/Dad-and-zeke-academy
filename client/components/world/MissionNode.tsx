@@ -34,45 +34,63 @@ function MissionNode({
       ? theme.currentNode
       : theme.lockedNode
 
-  const positionClassName =
-    position === 'left' ? 'md:mr-24' : 'md:ml-24'
+  const wrapperPosition =
+    position === 'left'
+      ? 'md:mr-auto md:ml-4'
+      : 'md:ml-auto md:mr-4'
 
   return (
-    <div className={`relative ${positionClassName}`}>
-      <span
+    <section
+      className={`relative w-full md:w-[78%] ${wrapperPosition}`}
+    >
+      <div
         aria-hidden="true"
-        className="absolute -left-3 -top-5 text-4xl"
+        className={`absolute -top-12 text-6xl ${
+          position === 'left'
+            ? '-left-3 md:-left-16'
+            : '-right-3 md:-right-16'
+        }`}
       >
         {sceneryIcon}
-      </span>
+      </div>
 
       {current && (
         <WorldCharacter
           mascot={theme.mascot}
           message="Zeke is here!"
+          position={position}
         />
       )}
 
       <article
-        className={`rounded-3xl border-4 p-6 shadow-md transition duration-300 md:p-8 ${
-          current ? `${nodeClassName} scale-[1.02]` : nodeClassName
+        className={`relative rounded-[2rem] border-4 p-6 shadow-md transition duration-300 md:p-8 ${
+          current
+            ? `${nodeClassName} scale-[1.02]`
+            : nodeClassName
         }`}
       >
-        <div className="flex flex-col items-center gap-5 text-center md:flex-row md:text-left">
+        {current && (
           <div
             aria-hidden="true"
-            className={`text-6xl ${
-              current ? 'animate-pulse' : ''
-            }`}
+            className="absolute -inset-3 -z-10 animate-pulse rounded-[2.5rem] bg-yellow-200/50"
+          />
+        )}
+
+        <div className="flex flex-col items-center gap-6 text-center md:flex-row md:text-left">
+          <div
+            aria-hidden="true"
+            className={`flex h-24 w-24 shrink-0 items-center justify-center rounded-full ${
+              completed
+                ? 'bg-green-100'
+                : current
+                  ? 'bg-yellow-100'
+                  : 'bg-gray-300'
+            } text-6xl`}
           >
-            {completed
-              ? '✅'
-              : current
-                ? theme.mascot
-                : '🔒'}
+            {completed ? '✅' : current ? '🗺️' : '🔒'}
           </div>
 
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center justify-center gap-3 md:justify-start">
               <p className="text-lg font-bold">
                 Mission {mission.number}
@@ -101,27 +119,24 @@ function MissionNode({
               Reward: {'⭐'.repeat(mission.stars)}
             </p>
 
-            <p className="mt-2 font-bold">
+            <p className="mt-3 font-bold">
               {completed &&
                 'Fantastic work! You completed this mission.'}
 
-              {current &&
-                'Your next adventure is ready!'}
+              {current && 'Your next adventure is ready!'}
 
               {locked &&
                 'Complete the previous mission to unlock this path.'}
             </p>
           </div>
 
-          <div>
+          <div className="shrink-0">
             {!locked ? (
               <Link
                 to={`/${worldPath}/mission/${mission.id}`}
                 className={`inline-block rounded-2xl px-7 py-4 text-lg font-bold text-white transition hover:scale-105 ${theme.button}`}
               >
-                {completed
-                  ? 'Play Again'
-                  : 'Continue Adventure'}
+                {completed ? 'Play Again' : 'Continue Adventure'}
               </Link>
             ) : (
               <button
@@ -135,7 +150,7 @@ function MissionNode({
           </div>
         </div>
       </article>
-    </div>
+    </section>
   )
 }
 

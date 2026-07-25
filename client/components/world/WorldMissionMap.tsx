@@ -4,16 +4,18 @@ import type {
   MissionNodeStatus,
   WorldMapMission,
   WorldTheme,
-} from './types'
+} from '../world/types'
 import WorldPath from './WorldPath'
 import { worldThemes } from './worldThemes'
+import WorldLandmark from './WorldLandmark'
+
 
 type WorldMissionMapProps = {
   missions: WorldMapMission[]
   completedMissions: string[]
   worldPath: string
   theme: WorldTheme
-}
+} 
 
 function WorldMissionMap({
   missions,
@@ -52,7 +54,7 @@ function WorldMissionMap({
   }
 
   return (
-    <div className="relative mx-auto mt-12 max-w-4xl overflow-hidden rounded-[2.5rem] p-4 md:p-10">
+    <div className="relative mx-auto mt-12 max-w-5xl overflow-hidden rounded-[2.5rem] px-4 py-12 md:px-10 md:py-16">
       <ForestDecoration scenery={themeConfig.scenery} />
 
       <div className="relative z-10">
@@ -72,17 +74,27 @@ function WorldMissionMap({
 
           const position =
             index % 2 === 0 ? 'left' : 'right'
+function isLandmarkUnlocked(index: number) {
+  if (index === 0) {
+    return true
+  }
 
+  const previousMission = missions[index - 1]
+
+  return completedMissions.includes(previousMission.id)
+}
           return (
             <div key={mission.id}>
               {index > 0 && (
-                <WorldPath
-                  completed={previousMissionCompleted}
-                  completedClassName={
-                    themeConfig.completedPath
-                  }
-                  lockedClassName={themeConfig.lockedPath}
-                />
+              <WorldPath
+  completed={previousMissionCompleted}
+  completedClassName={themeConfig.completedPath}
+  direction={
+    index % 2 === 1
+      ? 'left-to-right'
+      : 'right-to-left'
+  }
+/>
               )}
 
               <MissionNode

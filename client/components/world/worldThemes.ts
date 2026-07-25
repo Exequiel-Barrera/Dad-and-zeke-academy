@@ -1,5 +1,10 @@
 import type { WorldTheme } from './types'
 
+export type WorldLandmarkConfig = {
+  icon: string
+  title: string
+  description: string
+}
 export type WorldThemeConfig = {
   pageBackground: string
   completedNode: string
@@ -11,6 +16,7 @@ export type WorldThemeConfig = {
   badge: string
   mascot: string
   scenery: string[]
+  landmarks: WorldLandmarkConfig[]
 }
 
 export const worldThemes: Record<
@@ -31,6 +37,28 @@ export const worldThemes: Record<
     badge: 'bg-green-700 text-white',
     mascot: '🦖',
     scenery: ['🌳', '🍄', '🌲', '🌿', '🍃', '🌼'],
+    landmarks: [
+  {
+    icon: '🏕️',
+    title: 'Explorer Camp',
+    description: 'Every great reading adventure begins here.',
+  },
+  {
+    icon: '🌊',
+    title: 'Forest River',
+    description: 'Follow the river deeper into Reading Forest.',
+  },
+  {
+    icon: '🌉',
+    title: 'River Bridge',
+    description: 'The bridge leads toward the dinosaur nesting grounds.',
+  },
+  {
+    icon: '🪺',
+    title: 'Dinosaur Nest',
+    description: 'Complete the forest adventure and reach the nest.',
+  },
+],
   },
 
   writing: {
@@ -47,5 +75,27 @@ export const worldThemes: Record<
     badge: 'bg-purple-700 text-white',
     mascot: '🐼',
     scenery: ['✏️', '📚', '📝', '⭐', '📖', '🎨'],
+    landmarks: [
+  {
+    icon: '🏡',
+    title: 'Writer’s Workshop',
+    description: 'Pandalolo keeps pencils and paper ready here.',
+  },
+  {
+    icon: '📚',
+    title: 'Book Valley',
+    description: 'Stories and words fill every corner of the valley.',
+  },
+  {
+    icon: '✏️',
+    title: 'Pencil Pass',
+    description: 'The mountain path becomes steeper from here.',
+  },
+  {
+    icon: '🏔️',
+    title: 'Story Summit',
+    description: 'Complete every writing mission to reach the summit.',
+  },
+],
   },
 }

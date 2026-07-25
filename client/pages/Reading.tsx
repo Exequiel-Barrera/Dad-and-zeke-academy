@@ -1,7 +1,7 @@
 import { Link } from 'react-router'
 
 import Rex from '../components/characters/Rex'
-import WorldMissionMap from '../components/world/WorldMissionMap'
+import WorldAdventureMap from '../components/world/WorldAdventureMap'
 import { usePlayer } from '../context/PlayerContext'
 import { readingMissions } from '../data/missions'
 
@@ -43,7 +43,7 @@ function Reading() {
         </div>
       </div>
 
-      <WorldMissionMap
+      <WorldAdventureMap
         missions={mapMissions}
         completedMissions={player.completedMissions}
         worldPath="reading"
