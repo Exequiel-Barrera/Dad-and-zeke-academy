@@ -1,12 +1,11 @@
+import ExplorerCamp from './ExplorerCamp'
 import ForestDecoration from './ForestDecoration'
-import MissionNode from './MissionNode'
 import type {
   MissionNodeStatus,
   WorldMapMission,
   WorldTheme,
 } from './types'
-import WorldLandmark from './WorldLandmark'
-import WorldPath from './WorldPath'
+import WorldSection from './WorldSection'
 import { worldThemes } from './worldThemes'
 
 type WorldAdventureMapProps = {
@@ -14,6 +13,10 @@ type WorldAdventureMapProps = {
   completedMissions: string[]
   worldPath: string
   theme: WorldTheme
+  stars?: number
+  rexImage?: string
+  dadImage?: string
+  zekeImage?: string
 }
 
 function WorldAdventureMap({
@@ -21,6 +24,10 @@ function WorldAdventureMap({
   completedMissions,
   worldPath,
   theme,
+  stars = 0,
+  rexImage,
+  dadImage,
+  zekeImage,
 }: WorldAdventureMapProps) {
   const themeConfig = worldThemes[theme]
 
@@ -33,6 +40,11 @@ function WorldAdventureMap({
     missions.every((mission) =>
       completedMissions.includes(mission.id),
     )
+
+  const completedMissionCount = completedMissions.filter(
+    (missionId) =>
+      missions.some((mission) => mission.id === missionId),
+  ).length
 
   function getMissionStatus(
     mission: WorldMapMission,
@@ -49,21 +61,28 @@ function WorldAdventureMap({
     return 'locked'
   }
 
-  function isLandmarkUnlocked(landmarkIndex: number) {
+  function isLandmarkUnlocked(
+    landmarkIndex: number,
+  ): boolean {
     if (landmarkIndex === 0) {
       return true
     }
 
-    const previousMission = missions[landmarkIndex - 1]
+    const previousMission =
+      missions[landmarkIndex - 1]
 
     if (!previousMission) {
       return allMissionsCompleted
     }
 
-    return completedMissions.includes(previousMission.id)
+    return completedMissions.includes(
+      previousMission.id,
+    )
   }
 
-  function getPosition(index: number): 'left' | 'right' {
+  function getMissionPosition(
+    index: number,
+  ): 'left' | 'right' {
     return index % 2 === 0 ? 'left' : 'right'
   }
 
@@ -73,35 +92,30 @@ function WorldAdventureMap({
     return position === 'left' ? 'right' : 'left'
   }
 
-  function getPathDirection(
-    destinationPosition: 'left' | 'right',
-  ): 'left-to-right' | 'right-to-left' {
-    return destinationPosition === 'right'
-      ? 'left-to-right'
-      : 'right-to-left'
-  }
-
-  const startingLandmark = themeConfig.landmarks[0]
-
   return (
-    <div className="relative mx-auto mt-12 max-w-6xl overflow-hidden rounded-[3rem] px-4 py-12 md:px-10 md:py-16">
+    <div
+      className={`relative mx-auto mt-12 max-w-6xl overflow-hidden rounded-[3rem] px-4 py-12 md:px-10 md:py-16 ${themeConfig.pageBackground}`}
+    >
       <ForestDecoration scenery={themeConfig.scenery} />
 
       <div className="relative z-10">
-        {startingLandmark && (
-          <div className="mb-8">
-            <WorldLandmark
-              icon={startingLandmark.icon}
-              title={startingLandmark.title}
-              description={startingLandmark.description}
-              position="center"
-            />
-          </div>
-        )}
+        <ExplorerCamp
+          completedCount={completedMissionCount}
+          totalMissions={missions.length}
+          stars={stars}
+          rexImage={rexImage}
+          dadImage={dadImage}
+          zekeImage={zekeImage}
+        />
 
         {missions.map((mission, index) => {
-          const status = getMissionStatus(mission, index)
-          const missionPosition = getPosition(index)
+          const missionStatus = getMissionStatus(
+            mission,
+            index,
+          )
+
+          const missionPosition =
+            getMissionPosition(index)
 
           const landmark =
             themeConfig.landmarks[index + 1]
@@ -109,64 +123,36 @@ function WorldAdventureMap({
           const landmarkPosition =
             getOppositePosition(missionPosition)
 
-          const missionUnlocked = status !== 'locked'
+          const missionUnlocked =
+            missionStatus !== 'locked'
 
           const missionCompleted =
             completedMissions.includes(mission.id)
 
           const sceneryIcon =
-            themeConfig.scenery[
-              index % themeConfig.scenery.length
-            ]
+            themeConfig.scenery.length > 0
+              ? themeConfig.scenery[
+                  index % themeConfig.scenery.length
+                ]
+              : ''
 
           return (
-            <section
+            <WorldSection
               key={mission.id}
-              className="relative"
-            >
-              <WorldPath
-                completed={missionUnlocked}
-                completedClassName={
-                  themeConfig.completedPath
-                }
-                direction={getPathDirection(
-                  missionPosition,
-                )}
-              />
-
-              <MissionNode
-                mission={mission}
-                status={status}
-                worldPath={worldPath}
-                theme={themeConfig}
-                sceneryIcon={sceneryIcon}
-                position={missionPosition}
-              />
-
-              {landmark && (
-                <>
-                  <WorldPath
-                    completed={missionCompleted}
-                    completedClassName={
-                      themeConfig.completedPath
-                    }
-                    direction={getPathDirection(
-                      landmarkPosition,
-                    )}
-                  />
-
-                  <WorldLandmark
-                    icon={landmark.icon}
-                    title={landmark.title}
-                    description={landmark.description}
-                    position={landmarkPosition}
-                    locked={
-                      !isLandmarkUnlocked(index + 1)
-                    }
-                  />
-                </>
+              mission={mission}
+              missionStatus={missionStatus}
+              missionPosition={missionPosition}
+              missionCompleted={missionCompleted}
+              missionUnlocked={missionUnlocked}
+              worldPath={worldPath}
+              theme={themeConfig}
+              sceneryIcon={sceneryIcon}
+              landmark={landmark}
+              landmarkPosition={landmarkPosition}
+              landmarkUnlocked={isLandmarkUnlocked(
+                index + 1,
               )}
-            </section>
+            />
           )
         })}
 
@@ -183,11 +169,11 @@ function WorldAdventureMap({
               World Complete!
             </h2>
 
-            <p className="mt-4 text-xl font-bold">
+            <p className="mt-4 text-xl font-bold text-yellow-950">
               Amazing work, Explorer Zeke!
             </p>
 
-            <p className="mt-2 text-lg">
+            <p className="mt-2 text-lg text-yellow-900">
               You completed every adventure in this
               world.
             </p>
