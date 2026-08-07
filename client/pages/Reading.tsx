@@ -1,12 +1,24 @@
 import { Link } from 'react-router'
-
+import TrailGuide from '../components/world/TrailGuide'
 import Rex from '../components/characters/Rex'
 import WorldAdventureMap from '../components/world/WorldAdventureMap'
 import { usePlayer } from '../context/PlayerContext'
 import { readingMissions } from '../data/missions'
-
+import dadImage from '../assets/images/dad.png'
+import zekeImage from '../assets/images/zeke.png'
+import rexImage from '../assets/images/rex.png'
 function Reading() {
   const { player } = usePlayer()
+  
+  const completedMissionCount =
+  readingMissions.filter((mission) =>
+    player.completedMissions.includes(mission.id),
+  ).length
+
+const currentMission = Math.min(
+  completedMissionCount + 1,
+  readingMissions.length,
+)
 
   const mapMissions = readingMissions.map((mission) => ({
     id: mission.id,
@@ -43,12 +55,16 @@ function Reading() {
         </div>
       </div>
 
-      <WorldAdventureMap
-        missions={mapMissions}
-        completedMissions={player.completedMissions}
-        worldPath="reading"
-        theme="reading"
-      />
+   <WorldAdventureMap
+  missions={mapMissions}
+  completedMissions={player.completedMissions}
+  worldPath="reading"
+  theme="reading"
+  stars={player.stars}
+  dadImage={dadImage}
+  zekeImage={zekeImage}
+  rexImage={rexImage}
+/>
 
       <div className="mt-12 text-center">
         <Link

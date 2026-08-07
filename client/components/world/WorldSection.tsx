@@ -2,10 +2,11 @@ import MissionNode from './MissionNode'
 import type {
   MissionNodeStatus,
   WorldMapMission,
+  WorldTheme,
 } from './types'
 import type { WorldThemeConfig } from './worldThemes'
-import WorldLandmark from './WorldLandmark'
 import WorldPath from './WorldPath'
+import TrailGuide from './TrailGuide'
 
 type MapPosition = 'left' | 'right'
 
@@ -13,32 +14,29 @@ type WorldSectionProps = {
   mission: WorldMapMission
   missionStatus: MissionNodeStatus
   missionPosition: MapPosition
-  missionCompleted: boolean
+ 
   missionUnlocked: boolean
   worldPath: string
+  worldTheme: WorldTheme
   theme: WorldThemeConfig
   sceneryIcon: string
-  landmark?: {
-    icon: string
-    title: string
-    description: string
-  }
-  landmarkPosition: MapPosition
-  landmarkUnlocked: boolean
+  showTrailGuide?: boolean
+trailGuideImage?: string
+trailGuideMessage?: string
 }
 
 function WorldSection({
   mission,
   missionStatus,
   missionPosition,
-  missionCompleted,
   missionUnlocked,
   worldPath,
+  worldTheme,
   theme,
   sceneryIcon,
-  landmark,
-  landmarkPosition,
-  landmarkUnlocked,
+  showTrailGuide = false,
+  trailGuideImage,
+  trailGuideMessage = 'This is our next adventure!',
 }: WorldSectionProps) {
   function getPathDirection(
     destinationPosition: MapPosition,
@@ -48,42 +46,33 @@ function WorldSection({
       : 'right-to-left'
   }
 
-  return (
-    <section className="relative py-4">
-      <WorldPath
-        completed={missionUnlocked}
-        completedClassName={theme.completedPath}
-        direction={getPathDirection(missionPosition)}
-      />
+return (
+  <section className="relative py-4">
+    <WorldPath
+      completed={missionUnlocked}
+      completedClassName={theme.completedPath}
+      direction={getPathDirection(missionPosition)}
+      theme={worldTheme}
+    />
 
-      <MissionNode
-        mission={mission}
-        status={missionStatus}
-        worldPath={worldPath}
-        theme={theme}
-        sceneryIcon={sceneryIcon}
+    {showTrailGuide && (
+      <TrailGuide
+        image={trailGuideImage}
+        message={trailGuideMessage}
         position={missionPosition}
       />
+    )}
 
-      {landmark && (
-        <>
-          <WorldPath
-            completed={missionCompleted}
-            completedClassName={theme.completedPath}
-            direction={getPathDirection(landmarkPosition)}
-          />
-
-          <WorldLandmark
-            icon={landmark.icon}
-            title={landmark.title}
-            description={landmark.description}
-            position={landmarkPosition}
-            locked={!landmarkUnlocked}
-          />
-        </>
-      )}
-    </section>
-  )
+    <MissionNode
+      mission={mission}
+      status={missionStatus}
+      worldPath={worldPath}
+      theme={theme}
+      sceneryIcon={sceneryIcon}
+      position={missionPosition}
+    />
+  </section>
+)
 }
 
 export default WorldSection

@@ -1,10 +1,10 @@
 import ExplorerCamp from './ExplorerCamp'
-import ForestDecoration from './ForestDecoration'
 import type {
   MissionNodeStatus,
   WorldMapMission,
   WorldTheme,
 } from './types'
+import WorldMilestone from './WorldMilestone'
 import WorldSection from './WorldSection'
 import { worldThemes } from './worldThemes'
 
@@ -86,18 +86,10 @@ function WorldAdventureMap({
     return index % 2 === 0 ? 'left' : 'right'
   }
 
-  function getOppositePosition(
-    position: 'left' | 'right',
-  ): 'left' | 'right' {
-    return position === 'left' ? 'right' : 'left'
-  }
-
   return (
     <div
       className={`relative mx-auto mt-12 max-w-6xl overflow-hidden rounded-[3rem] px-4 py-12 md:px-10 md:py-16 ${themeConfig.pageBackground}`}
     >
-      <ForestDecoration scenery={themeConfig.scenery} />
-
       <div className="relative z-10">
         <ExplorerCamp
           completedCount={completedMissionCount}
@@ -117,12 +109,6 @@ function WorldAdventureMap({
           const missionPosition =
             getMissionPosition(index)
 
-          const landmark =
-            themeConfig.landmarks[index + 1]
-
-          const landmarkPosition =
-            getOppositePosition(missionPosition)
-
           const missionUnlocked =
             missionStatus !== 'locked'
 
@@ -136,23 +122,41 @@ function WorldAdventureMap({
                 ]
               : ''
 
+          const landmark =
+            themeConfig.landmarks[index + 1]
+
+          const landmarkUnlocked =
+            isLandmarkUnlocked(index + 1)
+
           return (
-            <WorldSection
+            <div
               key={mission.id}
-              mission={mission}
-              missionStatus={missionStatus}
-              missionPosition={missionPosition}
-              missionCompleted={missionCompleted}
-              missionUnlocked={missionUnlocked}
-              worldPath={worldPath}
-              theme={themeConfig}
-              sceneryIcon={sceneryIcon}
-              landmark={landmark}
-              landmarkPosition={landmarkPosition}
-              landmarkUnlocked={isLandmarkUnlocked(
-                index + 1,
+              className="relative"
+            >
+            <WorldSection
+  mission={mission}
+  missionStatus={missionStatus}
+  missionPosition={missionPosition}
+  missionUnlocked={missionUnlocked}
+  worldPath={worldPath}
+  worldTheme={theme}
+  theme={themeConfig}
+  sceneryIcon={sceneryIcon}
+  showTrailGuide={index === currentMissionIndex}
+  trailGuideImage={zekeImage}
+  trailGuideMessage="Let's explore the next adventure!"
+/>
+
+              {landmark && (
+                <WorldMilestone
+                  icon={landmark.icon}
+                  title={landmark.title}
+                  description={landmark.description}
+                  theme={theme}
+                  locked={!landmarkUnlocked}
+                />
               )}
-            />
+            </div>
           )
         })}
 
