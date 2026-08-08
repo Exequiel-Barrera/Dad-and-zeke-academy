@@ -6,7 +6,7 @@ import type {
 } from './types'
 import type { WorldThemeConfig } from './worldThemes'
 import WorldPath from './WorldPath'
-import TrailGuide from './TrailGuide'
+
 
 type MapPosition = 'left' | 'right'
 
@@ -53,16 +53,12 @@ return (
       completedClassName={theme.completedPath}
       direction={getPathDirection(missionPosition)}
       theme={worldTheme}
+       showTrailGuide={showTrailGuide}
+  trailGuideImage={trailGuideImage}
+  trailGuideMessage={trailGuideMessage}
     />
 
-    {showTrailGuide && (
-      <TrailGuide
-        image={trailGuideImage}
-        message={trailGuideMessage}
-        position={missionPosition}
-      />
-    )}
-
+   
     <MissionNode
       mission={mission}
       status={missionStatus}

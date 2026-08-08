@@ -54,13 +54,7 @@ function MissionNode({
         {sceneryIcon}
       </div>
 
-      {current && (
-        <WorldCharacter
-          mascot={theme.mascot}
-          message="Zeke is here!"
-          position={position}
-        />
-      )}
+    
 
       <article
         className={`relative rounded-[2rem] border-4 p-6 shadow-md transition duration-300 md:p-8 ${

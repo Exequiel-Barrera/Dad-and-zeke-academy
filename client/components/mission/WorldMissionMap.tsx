@@ -123,19 +123,7 @@ function WorldMissionMap({
                 {sceneryIcon}
               </span>
 
-              {isCurrent && (
-                <div className="absolute -right-3 -top-12 z-10 flex flex-col items-center">
-                  <span className="animate-bounce text-6xl">
-                    {styles.mascot}
-                  </span>
-
-                  <span
-                    className={`mt-1 whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold shadow ${styles.currentBadge}`}
-                  >
-                    Zeke is here!
-                  </span>
-                </div>
-              )}
+           
 
               <article
                 className={`rounded-3xl border-4 p-6 shadow-md transition duration-300 md:p-8 ${
