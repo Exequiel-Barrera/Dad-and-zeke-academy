@@ -1,3 +1,5 @@
+import { usePlayer } from '../../context/PlayerContext'
+
 import ExplorerCamp from './ExplorerCamp'
 import type {
   MissionNodeStatus,
@@ -29,10 +31,16 @@ function WorldAdventureMap({
   dadImage,
   zekeImage,
 }: WorldAdventureMapProps) {
+  const {
+    recentlyCompletedMissionId,
+    clearRecentMission,
+  } = usePlayer()
+
   const themeConfig = worldThemes[theme]
 
   const currentMissionIndex = missions.findIndex(
-    (mission) => !completedMissions.includes(mission.id),
+    (mission) =>
+      !completedMissions.includes(mission.id),
   )
 
   const allMissionsCompleted =
@@ -41,16 +49,21 @@ function WorldAdventureMap({
       completedMissions.includes(mission.id),
     )
 
-  const completedMissionCount = completedMissions.filter(
-    (missionId) =>
-      missions.some((mission) => mission.id === missionId),
-  ).length
+  const completedMissionCount =
+    completedMissions.filter((missionId) =>
+      missions.some(
+        (mission) =>
+          mission.id === missionId,
+      ),
+    ).length
 
   function getMissionStatus(
     mission: WorldMapMission,
     index: number,
   ): MissionNodeStatus {
-    if (completedMissions.includes(mission.id)) {
+    if (
+      completedMissions.includes(mission.id)
+    ) {
       return 'completed'
     }
 
@@ -83,7 +96,37 @@ function WorldAdventureMap({
   function getMissionPosition(
     index: number,
   ): 'left' | 'right' {
-    return index % 2 === 0 ? 'left' : 'right'
+    return index % 2 === 0
+      ? 'left'
+      : 'right'
+  }
+
+  function shouldAnimateJourney(
+    index: number,
+  ) {
+    /*
+      Zeke should only walk when:
+
+      1. This is the current mission.
+      2. There is a previous mission.
+      3. That previous mission was JUST completed.
+    */
+
+    if (index !== currentMissionIndex) {
+      return false
+    }
+
+    const previousMission =
+      missions[index - 1]
+
+    if (!previousMission) {
+      return false
+    }
+
+    return (
+      recentlyCompletedMissionId ===
+      previousMission.id
+    )
   }
 
   return (
@@ -92,7 +135,9 @@ function WorldAdventureMap({
     >
       <div className="relative z-10">
         <ExplorerCamp
-          completedCount={completedMissionCount}
+          completedCount={
+            completedMissionCount
+          }
           totalMissions={missions.length}
           stars={stars}
           rexImage={rexImage}
@@ -100,65 +145,108 @@ function WorldAdventureMap({
           zekeImage={zekeImage}
         />
 
-        {missions.map((mission, index) => {
-          const missionStatus = getMissionStatus(
-            mission,
-            index,
-          )
+        {missions.map(
+          (mission, index) => {
+            const missionStatus =
+              getMissionStatus(
+                mission,
+                index,
+              )
 
-          const missionPosition =
-            getMissionPosition(index)
+            const missionPosition =
+              getMissionPosition(index)
 
-          const missionUnlocked =
-            missionStatus !== 'locked'
+            const missionUnlocked =
+              missionStatus !== 'locked'
 
-          const missionCompleted =
-            completedMissions.includes(mission.id)
+            const sceneryIcon =
+              themeConfig.scenery.length >
+              0
+                ? themeConfig.scenery[
+                    index %
+                      themeConfig
+                        .scenery
+                        .length
+                  ]
+                : ''
 
-          const sceneryIcon =
-            themeConfig.scenery.length > 0
-              ? themeConfig.scenery[
-                  index % themeConfig.scenery.length
-                ]
-              : ''
+            const landmark =
+              themeConfig.landmarks[
+                index + 1
+              ]
 
-          const landmark =
-            themeConfig.landmarks[index + 1]
+            const landmarkUnlocked =
+              isLandmarkUnlocked(
+                index + 1,
+              )
 
-          const landmarkUnlocked =
-            isLandmarkUnlocked(index + 1)
+            const isCurrentMission =
+              index ===
+              currentMissionIndex
 
-          return (
-            <div
-              key={mission.id}
-              className="relative"
-            >
-            <WorldSection
-  mission={mission}
-  missionStatus={missionStatus}
-  missionPosition={missionPosition}
-  missionUnlocked={missionUnlocked}
-  worldPath={worldPath}
-  worldTheme={theme}
-  theme={themeConfig}
-  sceneryIcon={sceneryIcon}
-  showTrailGuide={index === currentMissionIndex}
-  trailGuideImage={zekeImage}
-  trailGuideMessage="Let's explore the next adventure!"
-/>
+            const animateJourney =
+              shouldAnimateJourney(index)
 
-              {landmark && (
-                <WorldMilestone
-                  icon={landmark.icon}
-                  title={landmark.title}
-                  description={landmark.description}
-                  theme={theme}
-                  locked={!landmarkUnlocked}
+            return (
+              <div
+                key={mission.id}
+                className="relative"
+              >
+                <WorldSection
+                  mission={mission}
+                  missionStatus={
+                    missionStatus
+                  }
+                  missionPosition={
+                    missionPosition
+                  }
+                  missionUnlocked={
+                    missionUnlocked
+                  }
+                  worldPath={worldPath}
+                  worldTheme={theme}
+                  theme={themeConfig}
+                  sceneryIcon={
+                    sceneryIcon
+                  }
+                  showTrailGuide={
+                    isCurrentMission
+                  }
+                  trailGuideImage={
+                    zekeImage
+                  }
+                  trailGuideMessage="Let's explore the next adventure!"
+                  animateTrailGuide={
+                    animateJourney
+                  }
+                  onTrailJourneyComplete={
+                    animateJourney
+                      ? clearRecentMission
+                      : undefined
+                  }
                 />
-              )}
-            </div>
-          )
-        })}
+
+                {landmark && (
+                  <WorldMilestone
+                    icon={
+                      landmark.icon
+                    }
+                    title={
+                      landmark.title
+                    }
+                    description={
+                      landmark.description
+                    }
+                    theme={theme}
+                    locked={
+                      !landmarkUnlocked
+                    }
+                  />
+                )}
+              </div>
+            )
+          },
+        )}
 
         {allMissionsCompleted && (
           <div className="mx-auto mt-16 max-w-xl rounded-[2.5rem] border-4 border-yellow-500 bg-yellow-100 p-8 text-center shadow-lg md:p-10">
@@ -174,12 +262,13 @@ function WorldAdventureMap({
             </h2>
 
             <p className="mt-4 text-xl font-bold text-yellow-950">
-              Amazing work, Explorer Zeke!
+              Amazing work, Explorer
+              Zeke!
             </p>
 
             <p className="mt-2 text-lg text-yellow-900">
-              You completed every adventure in this
-              world.
+              You completed every
+              adventure in this world.
             </p>
           </div>
         )}

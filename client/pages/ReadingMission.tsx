@@ -8,27 +8,59 @@ import StoryCard from '../components/mission/StoryCard'
 import { usePlayer } from '../context/PlayerContext'
 import { readingMissions } from '../data/missions'
 
-type MissionStage = 'story' | 'questions' | 'complete'
+type MissionStage =
+  | 'story'
+  | 'questions'
+  | 'complete'
 
 function ReadingMission() {
   const { missionId } = useParams()
-  const { player, addStars, completeMission } = usePlayer()
 
-  const missionIndex = readingMissions.findIndex(
-    (readingMission) => readingMission.id === missionId,
-  )
+  const {
+    player,
+    addStars,
+    completeMission,
+  } = usePlayer()
+
+  const missionIndex =
+    readingMissions.findIndex(
+      (readingMission) =>
+        readingMission.id === missionId,
+    )
 
   const mission =
-    missionIndex >= 0 ? readingMissions[missionIndex] : undefined
+    missionIndex >= 0
+      ? readingMissions[missionIndex]
+      : undefined
 
-  const nextMission = readingMissions[missionIndex + 1]
+  const nextMission =
+    readingMissions[missionIndex + 1]
 
-  const [stage, setStage] = useState<MissionStage>('story')
-  const [currentPage, setCurrentPage] = useState(0)
-  const [currentQuestion, setCurrentQuestion] = useState(0)
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
-  const [starsEarned, setStarsEarned] = useState(0)
-  const [wasAlreadyCompleted, setWasAlreadyCompleted] = useState(false)
+  const [stage, setStage] =
+    useState<MissionStage>('story')
+
+  const [currentPage, setCurrentPage] =
+    useState(0)
+
+  const [
+    currentQuestion,
+    setCurrentQuestion,
+  ] = useState(0)
+
+  const [
+    selectedAnswer,
+    setSelectedAnswer,
+  ] = useState<string | null>(null)
+
+  const [
+    starsEarned,
+    setStarsEarned,
+  ] = useState(0)
+
+  const [
+    wasAlreadyCompleted,
+    setWasAlreadyCompleted,
+  ] = useState(false)
 
   useEffect(() => {
     setStage('story')
@@ -37,9 +69,13 @@ function ReadingMission() {
     setSelectedAnswer(null)
     setStarsEarned(0)
 
+    window.speechSynthesis.cancel()
+
     if (missionId) {
       setWasAlreadyCompleted(
-        player.completedMissions.includes(missionId),
+        player.completedMissions.includes(
+          missionId,
+        ),
       )
     }
   }, [missionId])
@@ -65,19 +101,45 @@ function ReadingMission() {
 
   const currentMission = mission
 
-  const missionCompleted = player.completedMissions.includes(
-    currentMission.id,
-  )
+  const missionCompleted =
+    player.completedMissions.includes(
+      currentMission.id,
+    )
 
   const isLastStoryPage =
-    currentPage === currentMission.pages.length - 1
+    currentPage ===
+    currentMission.pages.length - 1
 
   const isLastQuestion =
-    currentQuestion === currentMission.questions.length - 1
+    currentQuestion ===
+    currentMission.questions.length - 1
 
-  const question = currentMission.questions[currentQuestion]
+  const question =
+    currentMission.questions[
+      currentQuestion
+    ]
 
-  function handleAnswer(answer: string) {
+  const rexMissionMessage =
+    currentMission.id === 'reading-1'
+      ? "Let's find out who the lost dinosaur egg belongs to!"
+      : currentMission.id === 'reading-2'
+        ? "Look, Zeke! Tiny footprints! Let's follow them and see where they lead!"
+        : currentMission.id === 'reading-3'
+          ? "Oh no! The river bridge is broken. Let's help our dinosaur friends!"
+          : `Let's begin ${currentMission.title}!`
+
+  const rexCompleteMessage =
+    currentMission.id === 'reading-1'
+      ? 'Great detective work, Zeke! We found a clue!'
+      : currentMission.id === 'reading-2'
+        ? 'We found the Triceratops! The egg belongs to her family!'
+        : currentMission.id === 'reading-3'
+          ? 'We did it! The egg is safely back with its dinosaur family!'
+          : 'Fantastic reading, Explorer Zeke!'
+
+  function handleAnswer(
+    answer: string,
+  ) {
     if (selectedAnswer !== null) {
       return
     }
@@ -85,7 +147,10 @@ function ReadingMission() {
     setSelectedAnswer(answer)
 
     if (answer === question.correct) {
-      setStarsEarned((currentStars) => currentStars + 1)
+      setStarsEarned(
+        (currentStars) =>
+          currentStars + 1,
+      )
     }
   }
 
@@ -95,16 +160,24 @@ function ReadingMission() {
       return
     }
 
-    setCurrentQuestion((questionNumber) => questionNumber + 1)
+    setCurrentQuestion(
+      (questionNumber) =>
+        questionNumber + 1,
+    )
+
     setSelectedAnswer(null)
   }
 
   function finishMission() {
     setStage('complete')
 
+    window.speechSynthesis.cancel()
+
     if (!missionCompleted) {
       addStars(starsEarned)
-      completeMission(currentMission.id)
+      completeMission(
+        currentMission.id,
+      )
     }
 
     window.scrollTo({
@@ -120,49 +193,138 @@ function ReadingMission() {
     setSelectedAnswer(null)
     setStarsEarned(0)
 
+    window.speechSynthesis.cancel()
+
     window.scrollTo({
       top: 0,
       behavior: 'smooth',
     })
   }
 
-  function readCelebrationMessage() {
-    let message = `Fantastic reading, Explorer Zeke! You completed ${currentMission.title}.`
+  function getPreferredVoice():
+    | SpeechSynthesisVoice
+    | undefined {
+    const voices =
+      window.speechSynthesis.getVoices()
 
-    if (!wasAlreadyCompleted) {
-      message += ` You earned ${starsEarned} stars.`
+    return (
+      voices.find((voice) =>
+        voice.name.includes(
+          'Microsoft Aria',
+        ),
+      ) ||
+      voices.find((voice) =>
+        voice.name.includes(
+          'Microsoft Jenny',
+        ),
+      ) ||
+      voices.find((voice) =>
+        voice.name.includes(
+          'Google UK English Female',
+        ),
+      ) ||
+      voices.find(
+        (voice) =>
+          voice.lang === 'en-NZ',
+      ) ||
+      voices.find(
+        (voice) =>
+          voice.lang === 'en-AU',
+      ) ||
+      voices.find((voice) =>
+        voice.lang.startsWith('en'),
+      )
+    )
+  }
+
+  function speak(text: string) {
+    window.speechSynthesis.cancel()
+
+    const speech =
+      new SpeechSynthesisUtterance(
+        text,
+      )
+
+    const preferredVoice =
+      getPreferredVoice()
+
+    if (preferredVoice) {
+      speech.voice = preferredVoice
     }
 
-    if (nextMission && !wasAlreadyCompleted) {
-      message += ` A new reading mission has been unlocked.`
+    speech.rate = 0.88
+    speech.pitch = 1.05
+    speech.volume = 1
+
+    window.speechSynthesis.speak(
+      speech,
+    )
+  }
+
+  function readStoryPage() {
+    const page =
+      currentMission.pages[
+        currentPage
+      ]
+
+    speak(page.text)
+  }
+
+  function readQuestion() {
+    const answers =
+      question.answers
+
+    let spokenAnswers =
+      answers.join(', ')
+
+    if (answers.length === 3) {
+      spokenAnswers =
+        `${answers[0]}... ${answers[1]}... or ${answers[2]}?`
+    }
+
+    speak(
+      `${question.question} Was it ${spokenAnswers}`,
+    )
+  }
+
+  function readCelebrationMessage() {
+    let message =
+      `${rexCompleteMessage} You completed ${currentMission.title}.`
+
+    if (!wasAlreadyCompleted) {
+      message +=
+        ` You earned ${starsEarned} stars.`
+    }
+
+    if (
+      nextMission &&
+      !wasAlreadyCompleted
+    ) {
+      message +=
+        ` A new reading mission has been unlocked. Next is Mission ${nextMission.number}: ${nextMission.title}.`
     }
 
     if (!nextMission) {
-      message += ` You completed every adventure in Reading Forest.`
+      message +=
+        ' You completed every adventure in Reading Forest.'
     }
 
-    window.speechSynthesis.cancel()
-
-    const speech = new SpeechSynthesisUtterance(message)
-
-    speech.rate = 0.8
-    speech.pitch = 1
-    speech.volume = 1
-
-    window.speechSynthesis.speak(speech)
+    speak(message)
   }
 
   return (
     <MissionLayout
-      missionNumber={currentMission.number}
+      missionNumber={
+        currentMission.number
+      }
       title={currentMission.title}
       mascot={
         <Rex
           size="small"
           message={
             stage === 'complete'
-              ? 'Fantastic reading, Explorer Zeke!'
-              : `Let's begin ${currentMission.title}!`
+              ? rexCompleteMessage
+              : rexMissionMessage
           }
         />
       }
@@ -174,18 +336,42 @@ function ReadingMission() {
       {stage === 'story' && (
         <div>
           <StoryCard
-            text={currentMission.pages[currentPage].text}
-            pageNumber={currentPage + 1}
-            totalPages={currentMission.pages.length}
+            text={
+              currentMission.pages[
+                currentPage
+              ].text
+            }
+            pageNumber={
+              currentPage + 1
+            }
+            totalPages={
+              currentMission.pages
+                .length
+            }
           />
+
+          <button
+            type="button"
+            onClick={readStoryPage}
+            className="mx-auto mt-6 flex items-center gap-3 rounded-2xl bg-blue-600 px-6 py-4 text-xl font-bold text-white transition hover:scale-105 hover:bg-blue-700"
+          >
+            🔊 Hear Rex Read This Page
+          </button>
 
           <div className="mt-8 flex items-center justify-between gap-4">
             <button
               type="button"
-              disabled={currentPage === 0}
-              onClick={() =>
-                setCurrentPage((pageNumber) => pageNumber - 1)
+              disabled={
+                currentPage === 0
               }
+              onClick={() => {
+                window.speechSynthesis.cancel()
+
+                setCurrentPage(
+                  (pageNumber) =>
+                    pageNumber - 1,
+                )
+              }}
               className="rounded-xl bg-gray-300 px-6 py-3 text-lg font-bold disabled:cursor-not-allowed disabled:opacity-40"
             >
               ← Previous
@@ -194,9 +380,14 @@ function ReadingMission() {
             {!isLastStoryPage ? (
               <button
                 type="button"
-                onClick={() =>
-                  setCurrentPage((pageNumber) => pageNumber + 1)
-                }
+                onClick={() => {
+                  window.speechSynthesis.cancel()
+
+                  setCurrentPage(
+                    (pageNumber) =>
+                      pageNumber + 1,
+                  )
+                }}
                 className="rounded-xl bg-green-700 px-6 py-3 text-lg font-bold text-white transition hover:scale-105 hover:bg-green-800"
               >
                 Next →
@@ -204,7 +395,12 @@ function ReadingMission() {
             ) : (
               <button
                 type="button"
-                onClick={() => setStage('questions')}
+                onClick={() => {
+                  window.speechSynthesis.cancel()
+                  setStage(
+                    'questions',
+                  )
+                }}
                 className="rounded-xl bg-green-700 px-6 py-3 text-lg font-bold text-white transition hover:scale-105 hover:bg-green-800"
               >
                 Answer Rex&apos;s Questions →
@@ -217,8 +413,12 @@ function ReadingMission() {
       {stage === 'questions' && (
         <div>
           <p className="mb-4 text-center text-xl font-bold text-green-900">
-            Question {currentQuestion + 1} of{' '}
-            {currentMission.questions.length}
+            Question{' '}
+            {currentQuestion + 1} of{' '}
+            {
+              currentMission
+                .questions.length
+            }
           </p>
 
           <div className="mb-6 h-3 overflow-hidden rounded-full bg-green-100">
@@ -226,27 +426,51 @@ function ReadingMission() {
               className="h-full rounded-full bg-green-600 transition-all duration-500"
               style={{
                 width: `${
-                  ((currentQuestion + 1) /
-                    currentMission.questions.length) *
+                  ((currentQuestion +
+                    1) /
+                    currentMission
+                      .questions
+                      .length) *
                   100
                 }%`,
               }}
             />
           </div>
 
+          <button
+            type="button"
+            onClick={readQuestion}
+            className="mx-auto mb-6 flex items-center gap-3 rounded-2xl bg-blue-600 px-6 py-4 text-xl font-bold text-white transition hover:scale-105 hover:bg-blue-700"
+          >
+            🔊 Read Question
+          </button>
+
           <QuestionCard
-            question={question.question}
-            answers={question.answers}
-            correctAnswer={question.correct}
-            selectedAnswer={selectedAnswer}
-            onSelectAnswer={handleAnswer}
+            question={
+              question.question
+            }
+            answers={
+              question.answers
+            }
+            correctAnswer={
+              question.correct
+            }
+            selectedAnswer={
+              selectedAnswer
+            }
+            onSelectAnswer={
+              handleAnswer
+            }
           />
 
           {selectedAnswer && (
             <div className="mt-8 text-center">
               <button
                 type="button"
-                onClick={handleNextQuestion}
+                onClick={() => {
+                  window.speechSynthesis.cancel()
+                  handleNextQuestion()
+                }}
                 className="rounded-xl bg-green-700 px-8 py-4 text-xl font-bold text-white transition hover:scale-105 hover:bg-green-800"
               >
                 {isLastQuestion
@@ -279,33 +503,41 @@ function ReadingMission() {
           </div>
 
           <div className="relative z-10">
-            <p className="animate-bounce text-7xl">🏆</p>
+            <p className="animate-bounce text-7xl">
+              🏆
+            </p>
 
-            <p className="mt-4 text-3xl">🎉 ⭐ 🎉 ⭐ 🎉</p>
+            <p className="mt-4 text-3xl">
+              🎉 ⭐ 🎉 ⭐ 🎉
+            </p>
 
             <h2 className="mt-5 text-4xl font-bold text-green-900 md:text-5xl">
               Mission Complete!
             </h2>
 
             <p className="mt-4 text-2xl font-bold">
-              Fantastic reading, Explorer Zeke!
+              {rexCompleteMessage}
             </p>
 
             <div className="mx-auto mt-8 max-w-md rounded-3xl bg-white p-6 shadow">
               {wasAlreadyCompleted ? (
                 <>
-                  <p className="text-5xl">📖</p>
+                  <p className="text-5xl">
+                    📖
+                  </p>
 
                   <h3 className="mt-3 text-2xl font-bold text-green-800">
                     Great Reading Practice!
                   </h3>
 
                   <p className="mt-3 text-lg">
-                    You completed this mission again.
+                    You completed this
+                    mission again.
                   </p>
 
                   <p className="mt-2 font-bold text-green-700">
-                    Your original reward is already saved.
+                    Your original reward
+                    is already saved.
                   </p>
                 </>
               ) : (
@@ -316,74 +548,97 @@ function ReadingMission() {
 
                   <div className="mt-4 flex flex-wrap justify-center gap-3">
                     {Array.from({
-                      length: currentMission.reward,
-                    }).map((_, index) => (
-                      <span
-                        key={index}
-                        className={`text-5xl ${
-                          index < starsEarned
-                            ? 'animate-bounce'
-                            : 'grayscale opacity-30'
-                        }`}
-                        style={{
-                          animationDelay: `${index * 150}ms`,
-                        }}
-                      >
-                        ⭐
-                      </span>
-                    ))}
+                      length:
+                        currentMission.reward,
+                    }).map(
+                      (_, index) => (
+                        <span
+                          key={index}
+                          className={`text-5xl ${
+                            index <
+                            starsEarned
+                              ? 'animate-bounce'
+                              : 'grayscale opacity-30'
+                          }`}
+                          style={{
+                            animationDelay: `${index * 150}ms`,
+                          }}
+                        >
+                          ⭐
+                        </span>
+                      ),
+                    )}
                   </div>
 
                   <p className="mt-4 text-3xl font-bold">
-                    {starsEarned} of {currentMission.reward}
+                    {starsEarned} of{' '}
+                    {
+                      currentMission.reward
+                    }
                   </p>
 
                   <p className="mt-3 text-lg font-bold text-green-700">
-                    The Great Learning Tree grew!
+                    The Great Learning
+                    Tree grew!
                   </p>
                 </>
               )}
             </div>
 
-            {!wasAlreadyCompleted && nextMission && (
-              <div className="mx-auto mt-8 max-w-lg rounded-3xl border-4 border-purple-400 bg-purple-100 p-6 shadow">
-                <p className="animate-pulse text-6xl">🔓</p>
+            {!wasAlreadyCompleted &&
+              nextMission && (
+                <div className="mx-auto mt-8 max-w-lg rounded-3xl border-4 border-purple-400 bg-purple-100 p-6 shadow">
+                  <p className="animate-pulse text-6xl">
+                    🔓
+                  </p>
 
-                <h3 className="mt-3 text-3xl font-bold text-purple-900">
-                  New Mission Unlocked!
-                </h3>
+                  <h3 className="mt-3 text-3xl font-bold text-purple-900">
+                    New Mission Unlocked!
+                  </h3>
 
-                <p className="mt-3 text-xl font-bold">
-                  Mission {nextMission.number}
-                </p>
+                  <p className="mt-3 text-xl font-bold">
+                    Mission{' '}
+                    {
+                      nextMission.number
+                    }
+                  </p>
 
-                <p className="mt-2 text-2xl font-bold">
-                  {nextMission.title}
-                </p>
+                  <p className="mt-2 text-2xl font-bold">
+                    {nextMission.title}
+                  </p>
 
-                <p className="mt-4 text-lg">
-                  Rex has discovered the next part of the forest path.
-                </p>
-              </div>
-            )}
+                  <p className="mt-4 text-lg">
+                    Rex has discovered
+                    the next part of the
+                    forest path.
+                  </p>
+                </div>
+              )}
 
             {!nextMission && (
               <div className="mx-auto mt-8 max-w-lg rounded-3xl border-4 border-green-600 bg-green-200 p-6 shadow">
-                <p className="animate-bounce text-7xl">🌳🏆🌳</p>
+                <p className="animate-bounce text-7xl">
+                  🌳🏆🌳
+                </p>
 
                 <h3 className="mt-4 text-3xl font-bold text-green-900">
-                  Reading Forest Complete!
+                  Reading Forest
+                  Complete!
                 </h3>
 
                 <p className="mt-3 text-xl font-bold">
-                  You completed every Reading Forest adventure!
+                  You completed every
+                  Reading Forest
+                  adventure!
                 </p>
               </div>
             )}
 
             <button
               type="button"
-              onClick={readCelebrationMessage}
+              onClick={
+                readCelebrationMessage
+              }
               className="mt-8 rounded-2xl bg-blue-600 px-6 py-4 text-xl font-bold text-white transition hover:scale-105 hover:bg-blue-700"
             >
               🔊 Hear Rex&apos;s Message

@@ -15,6 +15,9 @@ type WorldPathProps = {
   showTrailGuide?: boolean
   trailGuideImage?: string
   trailGuideMessage?: string
+
+  animateTrailGuide?: boolean
+  onTrailJourneyComplete?: () => void
 }
 
 type PathTheme = {
@@ -33,6 +36,7 @@ type GuidePosition = {
 
 const TARGET_GUIDE_PROGRESS = 0.72
 const GUIDE_ANIMATION_DURATION = 1800
+const ARRIVAL_CELEBRATION_DURATION = 1800
 
 const pathThemes: Record<WorldTheme, PathTheme> = {
   reading: {
@@ -80,6 +84,8 @@ function WorldPath({
   showTrailGuide = false,
   trailGuideImage,
   trailGuideMessage = "Let's explore the next adventure!",
+  animateTrailGuide = false,
+  onTrailJourneyComplete,
 }: WorldPathProps) {
   const path =
     direction === 'left-to-right'
@@ -97,6 +103,9 @@ function WorldPath({
   const animationFrameRef =
     useRef<number | null>(null)
 
+  const celebrationTimeoutRef =
+    useRef<number | null>(null)
+
   const [guidePosition, setGuidePosition] =
     useState<GuidePosition>({
       x: 290,
@@ -112,9 +121,15 @@ function WorldPath({
   const [isGuideMoving, setIsGuideMoving] =
     useState(false)
 
+  const [
+    isCelebratingArrival,
+    setIsCelebratingArrival,
+  ] = useState(false)
+
   useEffect(() => {
     const pathElement = pathRef.current
-    const containerElement = containerRef.current
+    const containerElement =
+      containerRef.current
 
     if (
       !pathElement ||
@@ -123,11 +138,6 @@ function WorldPath({
     ) {
       return
     }
-
-    const prefersReducedMotion =
-      window.matchMedia(
-        '(prefers-reduced-motion: reduce)',
-      ).matches
 
     const totalLength =
       pathElement.getTotalLength()
@@ -150,13 +160,38 @@ function WorldPath({
       setGuideReady(true)
     }
 
-    // Respect the user's reduced-motion setting.
-    if (prefersReducedMotion) {
+    function finishJourney() {
+      setIsGuideMoving(false)
+      setIsCelebratingArrival(true)
+
+      celebrationTimeoutRef.current =
+        window.setTimeout(() => {
+          setIsCelebratingArrival(false)
+
+          onTrailJourneyComplete?.()
+        }, ARRIVAL_CELEBRATION_DURATION)
+    }
+
+    const prefersReducedMotion =
+      window.matchMedia(
+        '(prefers-reduced-motion: reduce)',
+      ).matches
+
+    /*
+      If this mission was NOT just unlocked,
+      place Zeke immediately at his current
+      position and do not replay the journey.
+    */
+    if (
+      !animateTrailGuide ||
+      prefersReducedMotion
+    ) {
       updateGuidePosition(
         TARGET_GUIDE_PROGRESS,
       )
 
       setIsGuideMoving(false)
+      setIsCelebratingArrival(false)
 
       return
     }
@@ -173,6 +208,7 @@ function WorldPath({
       setGuideReady(false)
       setGuideProgress(0)
       setIsGuideMoving(true)
+      setIsCelebratingArrival(false)
 
       const startTime = performance.now()
 
@@ -189,8 +225,6 @@ function WorldPath({
             1,
           )
 
-        // Makes Zeke slow down naturally
-        // as he reaches his destination.
         const easedProgress =
           1 -
           Math.pow(
@@ -210,7 +244,7 @@ function WorldPath({
               animateGuide,
             )
         } else {
-          setIsGuideMoving(false)
+          finishJourney()
         }
       }
 
@@ -220,8 +254,6 @@ function WorldPath({
         )
     }
 
-    // Wait until this part of the adventure
-    // map is actually visible before Zeke moves.
     const observer =
       new IntersectionObserver(
         ([entry]) => {
@@ -247,8 +279,33 @@ function WorldPath({
           animationFrameRef.current,
         )
       }
+
+      if (
+        celebrationTimeoutRef.current !== null
+      ) {
+        clearTimeout(
+          celebrationTimeoutRef.current,
+        )
+      }
     }
-  }, [path, showTrailGuide])
+  }, [
+    path,
+    showTrailGuide,
+    animateTrailGuide,
+    onTrailJourneyComplete,
+  ])
+
+  function getGuideMessage() {
+    if (isGuideMoving) {
+      return 'Off we go! Follow the trail!'
+    }
+
+    if (isCelebratingArrival) {
+      return 'We made it! Our next adventure is ready!'
+    }
+
+    return trailGuideMessage
+  }
 
   return (
     <div
@@ -260,9 +317,6 @@ function WorldPath({
         viewBox="0 0 580 220"
         className="absolute inset-0 h-56 w-full overflow-visible"
       >
-        {/* Invisible path used to calculate
-            Zeke's position */}
-
         <path
           ref={pathRef}
           d={path}
@@ -270,8 +324,6 @@ function WorldPath({
           stroke="transparent"
           strokeWidth="1"
         />
-
-        {/* Trail shadow */}
 
         <path
           d={path}
@@ -282,8 +334,6 @@ function WorldPath({
           opacity="0.35"
         />
 
-        {/* Main trail */}
-
         <path
           d={path}
           fill="none"
@@ -292,8 +342,6 @@ function WorldPath({
           strokeLinecap="round"
         />
 
-        {/* Trail centre */}
-
         <path
           d={path}
           fill="none"
@@ -301,8 +349,6 @@ function WorldPath({
           strokeWidth="10"
           strokeLinecap="round"
         />
-
-        {/* Locked trail */}
 
         {!completed && (
           <path
@@ -314,8 +360,6 @@ function WorldPath({
             opacity="0.85"
           />
         )}
-
-        {/* Completed footsteps */}
 
         {completed && (
           <path
@@ -329,8 +373,6 @@ function WorldPath({
           />
         )}
       </svg>
-
-      {/* Trail decorations */}
 
       <PathDecoration
         value={themeConfig.decorations[0]}
@@ -346,8 +388,6 @@ function WorldPath({
         value={themeConfig.decorations[2]}
         className="right-[12%] top-[55%]"
       />
-
-      {/* Completed-trail decorations */}
 
       {completed && (
         <>
@@ -369,8 +409,6 @@ function WorldPath({
         </>
       )}
 
-      {/* Explorer Zeke */}
-
       {showTrailGuide &&
         trailGuideImage &&
         guideReady && (
@@ -380,37 +418,62 @@ function WorldPath({
               left: `${
                 (guidePosition.x / 580) * 100
               }%`,
-
               top: `${
                 (guidePosition.y / 220) * 224
               }px`,
-
               transform:
                 'translate(-50%, -50%)',
             }}
           >
-            <div className="flex flex-col items-center">
+            <div className="relative flex flex-col items-center">
+              {isCelebratingArrival && (
+                <>
+                  <span className="absolute -left-12 top-10 animate-bounce text-3xl">
+                    ⭐
+                  </span>
 
-              {/* Speech bubble */}
+                  <span className="absolute -right-12 top-7 animate-pulse text-3xl">
+                    ✨
+                  </span>
 
-              <div className="relative mb-3 w-56 rounded-2xl border-2 border-yellow-400 bg-white px-4 py-3 text-center shadow-lg">
+                  <span className="absolute -left-8 bottom-0 animate-pulse text-2xl">
+                    ✨
+                  </span>
+
+                  <span className="absolute -right-10 bottom-2 animate-bounce text-2xl">
+                    ⭐
+                  </span>
+                </>
+              )}
+
+              <div
+                className={`relative mb-3 w-56 rounded-2xl border-2 bg-white px-4 py-3 text-center shadow-lg transition-all duration-300 ${
+                  isCelebratingArrival
+                    ? 'scale-110 border-yellow-500'
+                    : 'border-yellow-400'
+                }`}
+              >
                 <p className="text-sm font-bold text-green-950 md:text-base">
-                  {isGuideMoving
-                    ? 'Off we go! Follow the trail!'
-                    : trailGuideMessage}
+                  {getGuideMessage()}
                 </p>
 
                 <span className="absolute -bottom-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-b-2 border-r-2 border-yellow-400 bg-white" />
               </div>
 
-              {/* Zeke portrait */}
-
-              <div className="relative">
+              <div
+                className={`relative transition-transform duration-300 ${
+                  isCelebratingArrival
+                    ? 'animate-bounce scale-110'
+                    : ''
+                }`}
+              >
                 <div
-                  className={`absolute inset-0 scale-110 rounded-full bg-yellow-300 opacity-40 blur-md ${
+                  className={`absolute inset-0 scale-110 rounded-full bg-yellow-300 blur-md ${
                     isGuideMoving
-                      ? 'animate-pulse'
-                      : ''
+                      ? 'animate-pulse opacity-40'
+                      : isCelebratingArrival
+                        ? 'animate-pulse opacity-70'
+                        : 'opacity-40'
                   }`}
                 />
 
@@ -420,19 +483,22 @@ function WorldPath({
                   className="relative h-24 w-24 rounded-full border-4 border-yellow-400 bg-white object-cover shadow-xl md:h-28 md:w-28"
                 />
 
-                {/* Location badge */}
-
-                {!isGuideMoving && (
-                  <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-green-700 px-3 py-1 text-xs font-bold text-white shadow">
-                    You are here!
+                {isCelebratingArrival && (
+                  <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-yellow-500 px-4 py-1 text-xs font-black text-yellow-950 shadow-lg">
+                    Adventure Unlocked! 🎉
                   </div>
                 )}
+
+                {!isGuideMoving &&
+                  !isCelebratingArrival && (
+                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-green-700 px-3 py-1 text-xs font-bold text-white shadow">
+                      You are here!
+                    </div>
+                  )}
               </div>
             </div>
           </div>
         )}
-
-      {/* Screen-reader progress information */}
 
       {showTrailGuide && (
         <span className="sr-only">
