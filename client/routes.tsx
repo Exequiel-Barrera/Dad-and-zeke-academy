@@ -10,11 +10,15 @@ import Character from './pages/Character.tsx'
 import Rewards from './pages/Rewards.tsx'
 import ReadingMission from './pages/ReadingMission.tsx'
 import WritingMission from './pages/WritingMission'
+import DadDashboard from './pages/DadDashboard'
 
 export default createRoutesFromElements(
   <Route path="/" element={<Layout />}>
     <Route index element={<Home />} />
-
+<Route
+  path="dad-dashboard"
+  element={<DadDashboard />}
+/>
     <Route path="reading" element={<Reading />} />
 
     <Route

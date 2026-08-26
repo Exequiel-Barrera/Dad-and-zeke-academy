@@ -1,12 +1,28 @@
+import type {
+  DifficultyLevel,
+  LearningSkill,
+} from './learningProfile'
+
 export type ReadingMission = {
   id: string
   number: number
   title: string
   reward: number
+
+  difficulty: DifficultyLevel
+
+  recommendedAge: {
+    min: number
+    max: number
+  }
+
+  skills: LearningSkill[]
+
   pages: {
     id: number
     text: string
   }[]
+
   questions: {
     question: string
     answers: string[]
@@ -20,6 +36,18 @@ export const readingMissions: ReadingMission[] = [
     number: 1,
     title: 'The Lost Dinosaur Egg',
     reward: 3,
+
+    difficulty: 'beginner',
+
+    recommendedAge: {
+      min: 5,
+      max: 7,
+    },
+
+    skills: [
+      'reading-comprehension',
+      'vocabulary',
+    ],
 
     pages: [
       {
@@ -39,17 +67,29 @@ export const readingMissions: ReadingMission[] = [
     questions: [
       {
         question: 'What did Rex find?',
-        answers: ['A shiny egg', 'A blue hat', 'A red car'],
+        answers: [
+          'A shiny egg',
+          'A blue hat',
+          'A red car',
+        ],
         correct: 'A shiny egg',
       },
       {
         question: 'Where was the egg?',
-        answers: ['Under a big tree', 'On a bus', 'Inside a house'],
+        answers: [
+          'Under a big tree',
+          'On a bus',
+          'Inside a house',
+        ],
         correct: 'Under a big tree',
       },
       {
         question: 'Who did Rex ask for help?',
-        answers: ['Zeke', 'A pirate', 'A dragon'],
+        answers: [
+          'Zeke',
+          'A pirate',
+          'A dragon',
+        ],
         correct: 'Zeke',
       },
     ],
@@ -60,6 +100,18 @@ export const readingMissions: ReadingMission[] = [
     number: 2,
     title: 'The Friendly Triceratops',
     reward: 3,
+
+    difficulty: 'easy',
+
+    recommendedAge: {
+      min: 5,
+      max: 7,
+    },
+
+    skills: [
+      'reading-comprehension',
+      'sequencing',
+    ],
 
     pages: [
       {
@@ -112,6 +164,19 @@ export const readingMissions: ReadingMission[] = [
     number: 3,
     title: 'The River Bridge Rescue',
     reward: 4,
+
+    difficulty: 'easy-plus',
+
+    recommendedAge: {
+      min: 6,
+      max: 8,
+    },
+
+    skills: [
+      'reading-comprehension',
+      'sequencing',
+      'inference',
+    ],
 
     pages: [
       {
@@ -171,5 +236,4 @@ export const readingMissions: ReadingMission[] = [
       },
     ],
   },
-  
 ]

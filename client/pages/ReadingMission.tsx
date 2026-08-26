@@ -16,11 +16,12 @@ type MissionStage =
 function ReadingMission() {
   const { missionId } = useParams()
 
-  const {
-    player,
-    addStars,
-    completeMission,
-  } = usePlayer()
+const {
+  player,
+  addStars,
+  completeMission,
+  recordReadingResult,
+} = usePlayer()
 
   const missionIndex =
     readingMissions.findIndex(
@@ -167,40 +168,45 @@ function ReadingMission() {
 
     setSelectedAnswer(null)
   }
+function finishMission() {
+  setStage('complete')
 
-  function finishMission() {
-    setStage('complete')
+  window.speechSynthesis.cancel()
 
-    window.speechSynthesis.cancel()
+  if (!missionCompleted) {
+    addStars(starsEarned)
 
-    if (!missionCompleted) {
-      addStars(starsEarned)
-      completeMission(
-        currentMission.id,
-      )
-    }
+    recordReadingResult(
+      starsEarned,
+      currentMission.questions.length,
+    )
 
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    })
+    completeMission(
+      currentMission.id,
+    )
   }
 
-  function restartMission() {
-    setStage('story')
-    setCurrentPage(0)
-    setCurrentQuestion(0)
-    setSelectedAnswer(null)
-    setStarsEarned(0)
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  })
+}
 
-    window.speechSynthesis.cancel()
+function restartMission() {
+  setStage('story')
+  setCurrentPage(0)
+  setCurrentQuestion(0)
+  setSelectedAnswer(null)
+  setStarsEarned(0)
 
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    })
-  }
+  window.speechSynthesis.cancel()
 
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  })
+}
+  
   function getPreferredVoice():
     | SpeechSynthesisVoice
     | undefined {

@@ -17,6 +17,12 @@ function Layout() {
             <Link to="/discovery">Discovery</Link>
             <Link to="/character">Character</Link>
             <Link to="/rewards">Rewards</Link>
+            <Link
+  to="/dad-dashboard"
+  className="transition hover:text-yellow-300"
+>
+  Dad Dashboard
+</Link>
           </nav>
         </div>
       </header>
