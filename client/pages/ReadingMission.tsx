@@ -1,11 +1,20 @@
-import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import {
+  useEffect,
+  useState,
+} from 'react'
+import {
+  Link,
+  useParams,
+} from 'react-router'
 
 import Rex from '../components/characters/Rex'
 import MissionLayout from '../components/mission/MissionLayout'
 import QuestionCard from '../components/mission/QuestionCard'
 import StoryCard from '../components/mission/StoryCard'
-import { usePlayer } from '../context/PlayerContext'
+import {
+  type ReadingQuestionResult,
+  usePlayer,
+} from '../context/PlayerContext'
 import { readingMissions } from '../data/missions'
 
 type MissionStage =
@@ -16,12 +25,12 @@ type MissionStage =
 function ReadingMission() {
   const { missionId } = useParams()
 
-const {
-  player,
-  addStars,
-  completeMission,
-  recordReadingResult,
-} = usePlayer()
+  const {
+    player,
+    addStars,
+    completeMission,
+    recordReadingResult,
+  } = usePlayer()
 
   const missionIndex =
     readingMissions.findIndex(
@@ -35,13 +44,17 @@ const {
       : undefined
 
   const nextMission =
-    readingMissions[missionIndex + 1]
+    readingMissions[
+      missionIndex + 1
+    ]
 
   const [stage, setStage] =
     useState<MissionStage>('story')
 
-  const [currentPage, setCurrentPage] =
-    useState(0)
+  const [
+    currentPage,
+    setCurrentPage,
+  ] = useState(0)
 
   const [
     currentQuestion,
@@ -51,24 +64,63 @@ const {
   const [
     selectedAnswer,
     setSelectedAnswer,
-  ] = useState<string | null>(null)
+  ] = useState<string | null>(
+    null,
+  )
 
   const [
     starsEarned,
     setStarsEarned,
   ] = useState(0)
 
+  /*
+    Stores the result of every
+    question during this mission.
+
+    Example:
+
+    [
+      {
+        skill: 'reading-comprehension',
+        correct: true,
+      },
+      {
+        skill: 'sequencing',
+        correct: false,
+      },
+    ]
+  */
+
+  const [
+    questionResults,
+    setQuestionResults,
+  ] = useState<
+    ReadingQuestionResult[]
+  >([])
+
   const [
     wasAlreadyCompleted,
     setWasAlreadyCompleted,
   ] = useState(false)
 
+  /*
+    --------------------------------
+    RESET WHEN MISSION CHANGES
+    --------------------------------
+  */
+
   useEffect(() => {
     setStage('story')
+
     setCurrentPage(0)
+
     setCurrentQuestion(0)
+
     setSelectedAnswer(null)
+
     setStarsEarned(0)
+
+    setQuestionResults([])
 
     window.speechSynthesis.cancel()
 
@@ -80,6 +132,12 @@ const {
       )
     }
   }, [missionId])
+
+  /*
+    --------------------------------
+    MISSION NOT FOUND
+    --------------------------------
+  */
 
   if (!mission) {
     return (
@@ -120,44 +178,96 @@ const {
       currentQuestion
     ]
 
+  /*
+    --------------------------------
+    REX MESSAGES
+    --------------------------------
+  */
+
   const rexMissionMessage =
     currentMission.id === 'reading-1'
       ? "Let's find out who the lost dinosaur egg belongs to!"
-      : currentMission.id === 'reading-2'
+      : currentMission.id ===
+          'reading-2'
         ? "Look, Zeke! Tiny footprints! Let's follow them and see where they lead!"
-        : currentMission.id === 'reading-3'
+        : currentMission.id ===
+            'reading-3'
           ? "Oh no! The river bridge is broken. Let's help our dinosaur friends!"
           : `Let's begin ${currentMission.title}!`
 
   const rexCompleteMessage =
     currentMission.id === 'reading-1'
       ? 'Great detective work, Zeke! We found a clue!'
-      : currentMission.id === 'reading-2'
+      : currentMission.id ===
+          'reading-2'
         ? 'We found the Triceratops! The egg belongs to her family!'
-        : currentMission.id === 'reading-3'
+        : currentMission.id ===
+            'reading-3'
           ? 'We did it! The egg is safely back with its dinosaur family!'
           : 'Fantastic reading, Explorer Zeke!'
+
+  /*
+    --------------------------------
+    ANSWER QUESTION
+    --------------------------------
+  */
 
   function handleAnswer(
     answer: string,
   ) {
+    /*
+      Prevent the same question
+      being answered more than once.
+    */
+
     if (selectedAnswer !== null) {
       return
     }
 
     setSelectedAnswer(answer)
 
-    if (answer === question.correct) {
+    const isCorrect =
+      answer === question.correct
+
+    /*
+      Add one mission star for
+      a correct answer.
+    */
+
+    if (isCorrect) {
       setStarsEarned(
         (currentStars) =>
           currentStars + 1,
       )
     }
+
+    /*
+      Save the individual question
+      result together with the
+      learning skill being tested.
+    */
+
+    setQuestionResults(
+      (currentResults) => [
+        ...currentResults,
+        {
+          skill: question.skill,
+          correct: isCorrect,
+        },
+      ],
+    )
   }
+
+  /*
+    --------------------------------
+    NEXT QUESTION
+    --------------------------------
+  */
 
   function handleNextQuestion() {
     if (isLastQuestion) {
       finishMission()
+
       return
     }
 
@@ -168,17 +278,28 @@ const {
 
     setSelectedAnswer(null)
   }
+
+  /*
+    --------------------------------
+    FINISH MISSION
+    --------------------------------
+  */
+
 function finishMission() {
   setStage('complete')
 
   window.speechSynthesis.cancel()
 
+  /*
+    Only record learning progress
+    the first time this mission
+    is completed.
+  */
   if (!missionCompleted) {
     addStars(starsEarned)
 
     recordReadingResult(
-      starsEarned,
-      currentMission.questions.length,
+      questionResults,
     )
 
     completeMission(
@@ -192,21 +313,39 @@ function finishMission() {
   })
 }
 
-function restartMission() {
-  setStage('story')
-  setCurrentPage(0)
-  setCurrentQuestion(0)
-  setSelectedAnswer(null)
-  setStarsEarned(0)
+  /*
+    --------------------------------
+    RESTART MISSION
+    --------------------------------
+  */
 
-  window.speechSynthesis.cancel()
+  function restartMission() {
+    setStage('story')
 
-  window.scrollTo({
-    top: 0,
-    behavior: 'smooth',
-  })
-}
-  
+    setCurrentPage(0)
+
+    setCurrentQuestion(0)
+
+    setSelectedAnswer(null)
+
+    setStarsEarned(0)
+
+    setQuestionResults([])
+
+    window.speechSynthesis.cancel()
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    })
+  }
+
+  /*
+    --------------------------------
+    NARRATION VOICE
+    --------------------------------
+  */
+
   function getPreferredVoice():
     | SpeechSynthesisVoice
     | undefined {
@@ -259,13 +398,21 @@ function restartMission() {
     }
 
     speech.rate = 0.88
+
     speech.pitch = 1.05
+
     speech.volume = 1
 
     window.speechSynthesis.speak(
       speech,
     )
   }
+
+  /*
+    --------------------------------
+    READ STORY PAGE
+    --------------------------------
+  */
 
   function readStoryPage() {
     const page =
@@ -275,6 +422,12 @@ function restartMission() {
 
     speak(page.text)
   }
+
+  /*
+    --------------------------------
+    READ QUESTION
+    --------------------------------
+  */
 
   function readQuestion() {
     const answers =
@@ -292,6 +445,12 @@ function restartMission() {
       `${question.question} Was it ${spokenAnswers}`,
     )
   }
+
+  /*
+    --------------------------------
+    COMPLETION NARRATION
+    --------------------------------
+  */
 
   function readCelebrationMessage() {
     let message =
@@ -318,6 +477,12 @@ function restartMission() {
     speak(message)
   }
 
+  /*
+    --------------------------------
+    PAGE
+    --------------------------------
+  */
+
   return (
     <MissionLayout
       missionNumber={
@@ -339,6 +504,12 @@ function restartMission() {
       backTo="/reading"
       backLabel="Return to Reading Forest"
     >
+      {/*
+        --------------------------------
+        STORY STAGE
+        --------------------------------
+      */}
+
       {stage === 'story' && (
         <div>
           <StoryCard
@@ -403,6 +574,7 @@ function restartMission() {
                 type="button"
                 onClick={() => {
                   window.speechSynthesis.cancel()
+
                   setStage(
                     'questions',
                   )
@@ -415,6 +587,12 @@ function restartMission() {
           </div>
         </div>
       )}
+
+      {/*
+        --------------------------------
+        QUESTIONS STAGE
+        --------------------------------
+      */}
 
       {stage === 'questions' && (
         <div>
@@ -475,6 +653,7 @@ function restartMission() {
                 type="button"
                 onClick={() => {
                   window.speechSynthesis.cancel()
+
                   handleNextQuestion()
                 }}
                 className="rounded-xl bg-green-700 px-8 py-4 text-xl font-bold text-white transition hover:scale-105 hover:bg-green-800"
@@ -487,6 +666,12 @@ function restartMission() {
           )}
         </div>
       )}
+
+      {/*
+        --------------------------------
+        COMPLETE STAGE
+        --------------------------------
+      */}
 
       {stage === 'complete' && (
         <div className="relative overflow-hidden rounded-3xl border-4 border-yellow-400 bg-yellow-100 p-8 text-center shadow-lg md:p-12">

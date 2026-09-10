@@ -9,12 +9,19 @@ import {
 import {
   initialLearningProfile,
   type LearningProfile,
+  type LearningSkill,
+  type SkillProgressMap,
 } from '../data/learningProfile'
 import {
   player as initialPlayer,
   type Player,
 } from '../data/player'
 import { getReadingDifficulty } from '../utils/getReadingDifficulty'
+
+export type ReadingQuestionResult = {
+  skill: LearningSkill
+  correct: boolean
+}
 
 type PlayerContextType = {
   player: Player
@@ -28,8 +35,7 @@ type PlayerContextType = {
   ) => void
 
   recordReadingResult: (
-    correctAnswers: number,
-    totalQuestions: number,
+    results: ReadingQuestionResult[],
   ) => void
 
   recentlyCompletedMissionId:
@@ -53,6 +59,47 @@ const PLAYER_STORAGE_KEY =
 
 const LEARNING_PROFILE_STORAGE_KEY =
   'dad-and-zeke-learning-profile'
+
+/*
+  This makes saved learning profiles
+  safe if we add new fields later.
+
+  Any missing properties are filled
+  from initialLearningProfile.
+*/
+function loadLearningProfile():
+  LearningProfile {
+  const savedProfile =
+    localStorage.getItem(
+      LEARNING_PROFILE_STORAGE_KEY,
+    )
+
+  if (!savedProfile) {
+    return initialLearningProfile
+  }
+
+  try {
+    const parsed =
+      JSON.parse(savedProfile) as
+        Partial<LearningProfile>
+
+    return {
+      ...initialLearningProfile,
+      ...parsed,
+
+      skillProgress: {
+        ...initialLearningProfile.skillProgress,
+        ...(parsed.skillProgress ?? {}),
+      },
+    }
+  } catch {
+    console.error(
+      'Could not load saved learning profile',
+    )
+
+    return initialLearningProfile
+  }
+}
 
 export function PlayerProvider({
   children,
@@ -94,34 +141,17 @@ export function PlayerProvider({
   const [
     learningProfile,
     setLearningProfile,
-  ] = useState<LearningProfile>(() => {
-    const savedProfile =
-      localStorage.getItem(
-        LEARNING_PROFILE_STORAGE_KEY,
-      )
-
-    if (savedProfile) {
-      try {
-        return JSON.parse(
-          savedProfile,
-        ) as LearningProfile
-      } catch {
-        console.error(
-          'Could not load saved learning profile',
-        )
-      }
-    }
-
-    return initialLearningProfile
-  })
+  ] = useState<LearningProfile>(
+    loadLearningProfile,
+  )
 
   /*
-    This is temporary session state.
+    Temporary session state.
 
-    We DON'T save this in localStorage.
+    This is NOT stored in localStorage.
 
-    It tells the map that a mission was
-    just completed so Zeke can travel
+    It tells the world map that a mission
+    was just completed so Zeke can travel
     toward the newly unlocked mission.
   */
 
@@ -182,7 +212,7 @@ export function PlayerProvider({
   ) {
     setPlayer((current) => {
       /*
-        Never complete the same
+        Don't complete the same
         mission twice.
       */
 
@@ -195,11 +225,11 @@ export function PlayerProvider({
       }
 
       /*
-        Remember which mission
-        was just completed.
+        Remember which mission was
+        just completed.
 
-        This triggers Zeke's
-        map journey.
+        WorldAdventureMap uses this
+        to trigger Zeke's journey.
       */
 
       setRecentlyCompletedMissionId(
@@ -222,25 +252,39 @@ export function PlayerProvider({
     RECORD READING PERFORMANCE
     --------------------------------
 
-    Example:
+    Example input:
 
-    3 correct answers
-    4 total questions
-
-    accuracy = 0.75
+    [
+      {
+        skill: 'reading-comprehension',
+        correct: true,
+      },
+      {
+        skill: 'sequencing',
+        correct: false,
+      },
+      {
+        skill: 'inference',
+        correct: true,
+      },
+    ]
   */
 
   function recordReadingResult(
-    correctAnswers: number,
-    totalQuestions: number,
+    results: ReadingQuestionResult[],
   ) {
-    if (totalQuestions <= 0) {
+    if (results.length === 0) {
       return
     }
 
+    const correctAnswers =
+      results.filter(
+        (result) => result.correct,
+      ).length
+
     const missionAccuracy =
       correctAnswers /
-      totalQuestions
+      results.length
 
     setLearningProfile(
       (currentProfile) => {
@@ -249,21 +293,9 @@ export function PlayerProvider({
             .completedReadingMissions
 
         /*
-          Calculate a cumulative
-          average across completed
-          reading missions.
-
-          Example:
-
-          Previous:
-          80% average from 2 missions
-
-          New mission:
-          100%
-
-          New average:
-          (0.8 × 2 + 1) / 3
-          = 0.866
+          --------------------------------
+          OVERALL ACCURACY
+          --------------------------------
         */
 
         const newAverageAccuracy =
@@ -275,21 +307,90 @@ export function PlayerProvider({
           ) /
           (previousMissionCount + 1)
 
-        const updatedProfile: LearningProfile =
-          {
-            ...currentProfile,
+        /*
+          --------------------------------
+          SKILL PROGRESS
+          --------------------------------
 
-            completedReadingMissions:
-              previousMissionCount + 1,
+          Start with a copy of the
+          existing values.
+        */
 
-            averageAccuracy:
-              newAverageAccuracy,
-          }
+        const updatedSkillProgress:
+          SkillProgressMap = {
+          'reading-comprehension': {
+            ...currentProfile
+              .skillProgress[
+              'reading-comprehension'
+            ],
+          },
+
+          vocabulary: {
+            ...currentProfile
+              .skillProgress.vocabulary,
+          },
+
+          sequencing: {
+            ...currentProfile
+              .skillProgress.sequencing,
+          },
+
+          inference: {
+            ...currentProfile
+              .skillProgress.inference,
+          },
+
+          'sentence-building': {
+            ...currentProfile
+              .skillProgress[
+              'sentence-building'
+            ],
+          },
+        }
 
         /*
-          Let our difficulty engine
-          decide the appropriate
-          next level.
+          Record every individual
+          question result against
+          the skill it tested.
+        */
+
+        results.forEach((result) => {
+          const currentSkill =
+            updatedSkillProgress[
+              result.skill
+            ]
+
+          currentSkill.total += 1
+
+          if (result.correct) {
+            currentSkill.correct += 1
+          }
+        })
+
+        /*
+          Build the updated profile
+          before calculating the new
+          difficulty.
+        */
+
+        const updatedProfile:
+          LearningProfile = {
+          ...currentProfile,
+
+          completedReadingMissions:
+            previousMissionCount + 1,
+
+          averageAccuracy:
+            newAverageAccuracy,
+
+          skillProgress:
+            updatedSkillProgress,
+        }
+
+        /*
+          Let the adaptive difficulty
+          engine decide the next
+          reading level.
         */
 
         const newDifficulty =

@@ -27,6 +27,7 @@ export type ReadingMission = {
     question: string
     answers: string[]
     correct: string
+    skill: LearningSkill
   }[]
 }
 
@@ -73,6 +74,7 @@ export const readingMissions: ReadingMission[] = [
           'A red car',
         ],
         correct: 'A shiny egg',
+        skill: 'reading-comprehension',
       },
       {
         question: 'Where was the egg?',
@@ -82,15 +84,19 @@ export const readingMissions: ReadingMission[] = [
           'Inside a house',
         ],
         correct: 'Under a big tree',
+        skill: 'reading-comprehension',
       },
       {
-        question: 'Who did Rex ask for help?',
+        question:
+          'What does the word "mystery" mean in this story?',
         answers: [
-          'Zeke',
-          'A pirate',
-          'A dragon',
+          'Something that needs to be solved',
+          'A kind of dinosaur',
+          'A place to sleep',
         ],
-        correct: 'Zeke',
+        correct:
+          'Something that needs to be solved',
+        skill: 'vocabulary',
       },
     ],
   },
@@ -130,31 +136,38 @@ export const readingMissions: ReadingMission[] = [
 
     questions: [
       {
-        question: 'What did Rex and Zeke follow?',
+        question:
+          'What did Rex and Zeke follow?',
         answers: [
           'Tiny footprints',
           'A yellow bus',
           'A flying balloon',
         ],
         correct: 'Tiny footprints',
+        skill: 'reading-comprehension',
       },
       {
-        question: 'Where did they find the triceratops?',
+        question:
+          'Where did they find the triceratops?',
         answers: [
           'Near a quiet river',
           'Inside a shop',
           'On top of a house',
         ],
         correct: 'Near a quiet river',
+        skill: 'reading-comprehension',
       },
       {
-        question: 'Who did the egg belong to?',
+        question:
+          'What happened after Rex and Zeke followed the footprints?',
         answers: [
-          'The triceratops family',
-          'A pirate',
-          'A robot',
+          'They found a triceratops near the river',
+          'They went back to camp',
+          'They found a flying balloon',
         ],
-        correct: 'The triceratops family',
+        correct:
+          'They found a triceratops near the river',
+        skill: 'sequencing',
       },
     ],
   },
@@ -199,40 +212,50 @@ export const readingMissions: ReadingMission[] = [
 
     questions: [
       {
-        question: 'What were the friends carrying?',
+        question:
+          'What were the friends carrying?',
         answers: [
           'The shiny egg',
           'A treasure chest',
           'A red bicycle',
         ],
         correct: 'The shiny egg',
+        skill: 'reading-comprehension',
       },
       {
-        question: 'What was broken?',
+        question:
+          'What happened before the friends repaired the bridge?',
         answers: [
-          'The wooden bridge',
-          'A toy train',
-          'The dinosaur egg',
+          'They discovered the bridge was broken',
+          'They returned the egg',
+          'They went back to camp',
         ],
-        correct: 'The wooden bridge',
+        correct:
+          'They discovered the bridge was broken',
+        skill: 'sequencing',
       },
       {
-        question: 'What did Zeke find?',
+        question:
+          'What did Zeke find to help repair the bridge?',
         answers: [
           'Strong branches',
           'A magic wand',
           'A green umbrella',
         ],
         correct: 'Strong branches',
+        skill: 'reading-comprehension',
       },
       {
-        question: 'How did they solve the problem?',
+        question:
+          'Why were the strong branches useful?',
         answers: [
-          'They worked together',
-          'They went home',
-          'They waited for a pirate',
+          'They could help repair the bridge',
+          'They could make the egg fly',
+          'They could turn into a dinosaur',
         ],
-        correct: 'They worked together',
+        correct:
+          'They could help repair the bridge',
+        skill: 'inference',
       },
     ],
   },
