@@ -33,10 +33,14 @@ function getDifficultyExplanation(
   >,
 ) {
   const accuracyPercent =
-    Math.round(averageAccuracy * 100)
+    Math.round(
+      averageAccuracy * 100,
+    )
 
   const reliableSkills =
-    Object.values(skillProgress).filter(
+    Object.values(
+      skillProgress,
+    ).filter(
       (progress) =>
         progress.total >= 4,
     )
@@ -121,7 +125,8 @@ function getDifficultyExplanation(
     ).length
 
   const allReliableSkillsAtOrAbove70 =
-    reliableSkillAccuracies.length > 0 &&
+    reliableSkillAccuracies.length >
+      0 &&
     reliableSkillAccuracies.every(
       (accuracy) =>
         accuracy >= 0.7,
@@ -131,7 +136,8 @@ function getDifficultyExplanation(
     completedReadingMissions >= 5 &&
     averageAccuracy >= 0.9 &&
     readingLevel >= 2 &&
-    reliableSkillsAtOrAbove70 >= 2 &&
+    reliableSkillsAtOrAbove70 >=
+      2 &&
     allReliableSkillsAtOrAbove70
   ) {
     return {
@@ -147,6 +153,143 @@ function getDifficultyExplanation(
       'Strong performance, but more evidence is needed',
     message:
       'Overall accuracy is high, but the app is waiting for more mission history or reliable skill data before moving to Medium difficulty.',
+  }
+}
+
+function getReadingLevelExplanation(
+  readingLevel: number,
+  completedReadingMissions: number,
+  averageAccuracy: number,
+  skillProgress: Record<
+    string,
+    {
+      correct: number
+      total: number
+    }
+  >,
+) {
+  const accuracyPercent =
+    Math.round(
+      averageAccuracy * 100,
+    )
+
+  const reliableSkillAccuracies =
+    Object.values(
+      skillProgress,
+    )
+      .filter(
+        (progress) =>
+          progress.total >= 4,
+      )
+      .map(
+        (progress) =>
+          progress.correct /
+          progress.total,
+      )
+
+  const reliableSkillsAtOrAbove70 =
+    reliableSkillAccuracies.filter(
+      (accuracy) =>
+        accuracy >= 0.7,
+    ).length
+
+  const reliableSkillsAtOrAbove80 =
+    reliableSkillAccuracies.filter(
+      (accuracy) =>
+        accuracy >= 0.8,
+    ).length
+
+  if (readingLevel === 1) {
+    if (
+      completedReadingMissions < 3
+    ) {
+      return {
+        title:
+          'Level 1 — Early Reader',
+        message:
+          'The app is still collecting early reading results. At least 3 recorded missions are needed before moving toward Reading Level 2.',
+      }
+    }
+
+    if (
+      averageAccuracy < 0.75
+    ) {
+      return {
+        title:
+          'Level 1 — Building Confidence',
+        message:
+          `Average accuracy is currently ${accuracyPercent}%. The app waits for at least 75% average accuracy before considering Reading Level 2.`,
+      }
+    }
+
+    if (
+      reliableSkillsAtOrAbove70 <
+      1
+    ) {
+      return {
+        title:
+          'Level 1 — More Skill Evidence Needed',
+        message:
+          'Overall performance is developing well, but the app needs at least one reliably measured reading skill at 70% or higher before moving to Level 2.',
+      }
+    }
+
+    return {
+      title:
+        'Level 1 — Nearly Ready',
+      message:
+        'The learner is close to the next reading level. More recorded answers will help confirm readiness.',
+    }
+  }
+
+  if (readingLevel === 2) {
+    if (
+      completedReadingMissions < 6
+    ) {
+      return {
+        title:
+          'Level 2 — Developing Reader',
+        message:
+          'Zeke has shown enough progress to move beyond early-reader activities. The app will now gradually introduce longer stories, sequencing, vocabulary, and simple inference.',
+      }
+    }
+
+    if (
+      averageAccuracy < 0.9
+    ) {
+      return {
+        title:
+          'Level 2 — Developing Reader',
+        message:
+          `Average accuracy is ${accuracyPercent}%. Level 3 requires sustained performance around 90% together with strong skill evidence.`,
+      }
+    }
+
+    if (
+      reliableSkillsAtOrAbove80 <
+      3
+    ) {
+      return {
+        title:
+          'Level 2 — Building Toward Level 3',
+        message:
+          'Overall accuracy is strong, but the app needs at least 3 reliably measured skills at 80% or higher before moving to Reading Level 3.',
+      }
+    }
+
+    return {
+      title:
+        'Level 2 — Nearly Ready for Level 3',
+      message:
+        'Performance is very strong. The app is gathering the final evidence needed before increasing the reading level.',
+    }
+  }
+
+  return {
+    title:
+      'Level 3 — Confident Reader',
+    message:
+      'Zeke has demonstrated strong performance across multiple reading missions and skills. Future activities can include longer passages, more inference, vocabulary in context, and greater independence.',
   }
 }
 
@@ -199,6 +342,7 @@ function DadDashboard() {
   const {
     player,
     learningProfile,
+    simulateReadingResult,
   } = usePlayer()
 
   const accuracyPercent =
@@ -214,6 +358,16 @@ function DadDashboard() {
       learningProfile
         .averageAccuracy,
       learningProfile.readingLevel,
+      learningProfile.skillProgress,
+    )
+
+  const readingLevelExplanation =
+    getReadingLevelExplanation(
+      learningProfile.readingLevel,
+      learningProfile
+        .completedReadingMissions,
+      learningProfile
+        .averageAccuracy,
       learningProfile.skillProgress,
     )
 
@@ -245,12 +399,6 @@ function DadDashboard() {
       },
     )
 
-  /*
-    Only skills with enough
-    evidence can influence
-    future adaptive missions.
-  */
-
   const reliableSkills =
     skillResults
       .filter(
@@ -273,11 +421,6 @@ function DadDashboard() {
       ? reliableSkills[0]
       : null
 
-  /*
-    Skills with some results but
-    not enough evidence yet.
-  */
-
   const developingSkills =
     skillResults.filter(
       (skill) =>
@@ -288,7 +431,7 @@ function DadDashboard() {
 
   /*
     --------------------------------
-    FALLBACK LEARNING FOCUS
+    FALLBACK FOCUS
     --------------------------------
   */
 
@@ -323,10 +466,82 @@ function DadDashboard() {
               'Vocabulary in context',
             ]
 
+  /*
+    --------------------------------
+    DEVELOPER TEST FUNCTIONS
+    --------------------------------
+  */
+
+  function simulateStrongMission() {
+    simulateReadingResult([
+      {
+        skill:
+          'reading-comprehension',
+        correct: true,
+      },
+      {
+        skill:
+          'reading-comprehension',
+        correct: true,
+      },
+      {
+        skill: 'vocabulary',
+        correct: true,
+      },
+      {
+        skill: 'sequencing',
+        correct: true,
+      },
+    ])
+  }
+
+  function simulateMixedMission() {
+    simulateReadingResult([
+      {
+        skill:
+          'reading-comprehension',
+        correct: true,
+      },
+      {
+        skill: 'vocabulary',
+        correct: false,
+      },
+      {
+        skill: 'sequencing',
+        correct: true,
+      },
+      {
+        skill: 'inference',
+        correct: false,
+      },
+    ])
+  }
+
+  function simulateStrugglingMission() {
+    simulateReadingResult([
+      {
+        skill:
+          'reading-comprehension',
+        correct: false,
+      },
+      {
+        skill: 'vocabulary',
+        correct: false,
+      },
+      {
+        skill: 'sequencing',
+        correct: false,
+      },
+      {
+        skill: 'inference',
+        correct: true,
+      },
+    ])
+  }
+
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-10 md:px-8">
       <div className="mx-auto max-w-6xl">
-
         {/* HEADER */}
 
         <header className="rounded-[2.5rem] bg-slate-900 p-8 text-white shadow-lg md:p-10">
@@ -341,9 +556,10 @@ function DadDashboard() {
           <p className="mt-4 max-w-3xl text-lg text-slate-200">
             Track reading progress,
             individual learning skills,
-            current difficulty, and
-            what the adaptive learning
-            system recommends next.
+            reading level, current
+            difficulty, and what the
+            adaptive learning system
+            recommends next.
           </p>
         </header>
 
@@ -384,9 +600,6 @@ function DadDashboard() {
         {/* PROFILE + LEARNING FOCUS */}
 
         <section className="mt-8 grid gap-8 lg:grid-cols-2">
-
-          {/* LEARNING PROFILE */}
-
           <div className="rounded-[2rem] bg-white p-8 shadow-md">
             <p className="text-5xl">
               📈
@@ -426,8 +639,6 @@ function DadDashboard() {
               />
             </div>
           </div>
-
-          {/* CURRENT LEARNING FOCUS */}
 
           <div className="rounded-[2rem] bg-white p-8 shadow-md">
             <p className="text-5xl">
@@ -595,6 +806,41 @@ function DadDashboard() {
           </div>
         </section>
 
+        {/* WHY THIS READING LEVEL */}
+
+        <section className="mt-8 rounded-[2rem] border-4 border-purple-200 bg-purple-50 p-8 shadow-md">
+          <div className="flex flex-col gap-5 md:flex-row md:items-start">
+            <div className="text-5xl">
+              📚
+            </div>
+
+            <div>
+              <h2 className="text-3xl font-black text-purple-950">
+                Why this Reading Level?
+              </h2>
+
+              <p className="mt-3 text-xl font-black text-purple-900">
+                Level{' '}
+                {
+                  learningProfile.readingLevel
+                }
+              </p>
+
+              <h3 className="mt-5 text-xl font-black text-slate-900">
+                {
+                  readingLevelExplanation.title
+                }
+              </h3>
+
+              <p className="mt-2 max-w-3xl text-lg leading-relaxed text-slate-700">
+                {
+                  readingLevelExplanation.message
+                }
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* SKILL PROGRESS */}
 
         <section className="mt-8 rounded-[2rem] bg-white p-8 shadow-md">
@@ -711,6 +957,17 @@ function DadDashboard() {
                 )}
               </p>
 
+              <p className="mt-4 text-sm font-bold uppercase tracking-wide text-slate-500">
+                Reading Level
+              </p>
+
+              <p className="mt-1 text-xl font-black text-purple-700">
+                Level{' '}
+                {
+                  learningProfile.readingLevel
+                }
+              </p>
+
               {prioritySkill ? (
                 <>
                   <p className="mt-4 text-sm font-bold uppercase tracking-wide text-slate-500">
@@ -738,6 +995,66 @@ function DadDashboard() {
           </div>
         </section>
 
+        {/* DEVELOPER TESTING */}
+
+        <section className="mt-8 rounded-[2rem] border-4 border-dashed border-red-300 bg-red-50 p-8 shadow-md">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start">
+            <div className="text-5xl">
+              🛠️
+            </div>
+
+            <div className="flex-1">
+              <p className="text-sm font-black uppercase tracking-wide text-red-700">
+                Developer Testing
+              </p>
+
+              <h2 className="mt-2 text-3xl font-black text-red-950">
+                Simulate Reading Results
+              </h2>
+
+              <p className="mt-3 max-w-3xl text-lg text-red-900">
+                These buttons add test
+                learning data without
+                changing stars or
+                completing Reading Forest
+                missions.
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-4">
+                <button
+                  type="button"
+                  onClick={
+                    simulateStrongMission
+                  }
+                  className="rounded-2xl bg-green-700 px-6 py-4 font-bold text-white transition hover:scale-105 hover:bg-green-800"
+                >
+                  🌟 Simulate Strong Mission
+                </button>
+
+                <button
+                  type="button"
+                  onClick={
+                    simulateMixedMission
+                  }
+                  className="rounded-2xl bg-yellow-600 px-6 py-4 font-bold text-white transition hover:scale-105 hover:bg-yellow-700"
+                >
+                  🧪 Simulate Mixed Mission
+                </button>
+
+                <button
+                  type="button"
+                  onClick={
+                    simulateStrugglingMission
+                  }
+                  className="rounded-2xl bg-red-700 px-6 py-4 font-bold text-white transition hover:scale-105 hover:bg-red-800"
+                >
+                  🎯 Simulate Struggling Mission
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* NAVIGATION */}
 
         <div className="mt-10 flex flex-wrap justify-center gap-4">
@@ -759,12 +1076,6 @@ function DadDashboard() {
     </main>
   )
 }
-
-/*
-  --------------------------------
-  SUMMARY CARD
-  --------------------------------
-*/
 
 type DashboardCardProps = {
   icon: string
@@ -794,12 +1105,6 @@ function DashboardCard({
   )
 }
 
-/*
-  --------------------------------
-  PROFILE ROW
-  --------------------------------
-*/
-
 type ProfileRowProps = {
   label: string
   value: string
@@ -821,12 +1126,6 @@ function ProfileRow({
     </div>
   )
 }
-
-/*
-  --------------------------------
-  SKILL CARD
-  --------------------------------
-*/
 
 type SkillCardProps = {
   icon: string

@@ -17,6 +17,7 @@ import {
   type Player,
 } from '../data/player'
 import { getReadingDifficulty } from '../utils/getReadingDifficulty'
+import { getReadingLevel } from '../utils/getReadingLevel'
 
 export type ReadingQuestionResult = {
   skill: LearningSkill
@@ -35,6 +36,10 @@ type PlayerContextType = {
   ) => void
 
   recordReadingResult: (
+    results: ReadingQuestionResult[],
+  ) => void
+
+  simulateReadingResult: (
     results: ReadingQuestionResult[],
   ) => void
 
@@ -61,12 +66,14 @@ const LEARNING_PROFILE_STORAGE_KEY =
   'dad-and-zeke-learning-profile'
 
 /*
-  This makes saved learning profiles
-  safe if we add new fields later.
+  --------------------------------
+  LOAD LEARNING PROFILE
+  --------------------------------
 
-  Any missing properties are filled
-  from initialLearningProfile.
+  This also protects us if an older
+  saved profile is missing newer fields.
 */
+
 function loadLearningProfile():
   LearningProfile {
   const savedProfile =
@@ -146,13 +153,15 @@ export function PlayerProvider({
   )
 
   /*
-    Temporary session state.
+    --------------------------------
+    TEMPORARY JOURNEY STATE
+    --------------------------------
 
-    This is NOT stored in localStorage.
+    This is NOT saved in localStorage.
 
-    It tells the world map that a mission
-    was just completed so Zeke can travel
-    toward the newly unlocked mission.
+    It tells the world map that a
+    mission was just completed so
+    Zeke can travel to the next mission.
   */
 
   const [
@@ -188,7 +197,7 @@ export function PlayerProvider({
 
   /*
     --------------------------------
-    STARS
+    ADD STARS
     --------------------------------
   */
 
@@ -212,7 +221,7 @@ export function PlayerProvider({
   ) {
     setPlayer((current) => {
       /*
-        Don't complete the same
+        Never complete the same
         mission twice.
       */
 
@@ -225,8 +234,8 @@ export function PlayerProvider({
       }
 
       /*
-        Remember which mission was
-        just completed.
+        Remember which mission
+        was just completed.
 
         WorldAdventureMap uses this
         to trigger Zeke's journey.
@@ -260,14 +269,18 @@ export function PlayerProvider({
         correct: true,
       },
       {
-        skill: 'sequencing',
+        skill: 'vocabulary',
         correct: false,
       },
-      {
-        skill: 'inference',
-        correct: true,
-      },
     ]
+
+    This updates:
+
+    - completed reading missions
+    - overall accuracy
+    - individual skill progress
+    - adaptive reading level
+    - adaptive difficulty
   */
 
   function recordReadingResult(
@@ -279,7 +292,8 @@ export function PlayerProvider({
 
     const correctAnswers =
       results.filter(
-        (result) => result.correct,
+        (result) =>
+          result.correct,
       ).length
 
     const missionAccuracy =
@@ -309,11 +323,8 @@ export function PlayerProvider({
 
         /*
           --------------------------------
-          SKILL PROGRESS
+          COPY SKILL PROGRESS
           --------------------------------
-
-          Start with a copy of the
-          existing values.
         */
 
         const updatedSkillProgress:
@@ -349,9 +360,9 @@ export function PlayerProvider({
         }
 
         /*
-          Record every individual
-          question result against
-          the skill it tested.
+          --------------------------------
+          UPDATE EACH SKILL
+          --------------------------------
         */
 
         results.forEach((result) => {
@@ -368,9 +379,9 @@ export function PlayerProvider({
         })
 
         /*
-          Build the updated profile
-          before calculating the new
-          difficulty.
+          --------------------------------
+          BUILD UPDATED PROFILE
+          --------------------------------
         */
 
         const updatedProfile:
@@ -388,23 +399,71 @@ export function PlayerProvider({
         }
 
         /*
-          Let the adaptive difficulty
-          engine decide the next
-          reading level.
+          --------------------------------
+          ADAPT READING LEVEL
+          --------------------------------
+        */
+
+        const newReadingLevel =
+          getReadingLevel(
+            updatedProfile,
+          )
+
+        const profileWithReadingLevel:
+          LearningProfile = {
+          ...updatedProfile,
+
+          readingLevel:
+            newReadingLevel,
+        }
+
+        /*
+          --------------------------------
+          ADAPT DIFFICULTY
+          --------------------------------
+
+          Difficulty is calculated AFTER
+          the new reading level so both
+          systems stay connected.
         */
 
         const newDifficulty =
           getReadingDifficulty(
-            updatedProfile,
+            profileWithReadingLevel,
           )
 
         return {
-          ...updatedProfile,
+          ...profileWithReadingLevel,
 
           currentDifficulty:
             newDifficulty,
         }
       },
+    )
+  }
+
+  /*
+    --------------------------------
+    SIMULATE READING RESULT
+    --------------------------------
+
+    Developer testing only.
+
+    This sends fake question results
+    through exactly the same adaptive
+    learning engine as a real mission.
+
+    It does NOT:
+    - add stars
+    - complete game missions
+    - change Reading Forest progression
+  */
+
+  function simulateReadingResult(
+    results: ReadingQuestionResult[],
+  ) {
+    recordReadingResult(
+      results,
     )
   }
 
@@ -432,6 +491,8 @@ export function PlayerProvider({
         completeMission,
 
         recordReadingResult,
+
+        simulateReadingResult,
 
         recentlyCompletedMissionId,
 
