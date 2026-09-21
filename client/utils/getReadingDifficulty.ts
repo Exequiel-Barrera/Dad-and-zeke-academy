@@ -17,10 +17,6 @@ export function getReadingDifficulty(
     --------------------------------
     NOT ENOUGH MISSION DATA YET
     --------------------------------
-
-    Keep the learner at Beginner
-    until at least 2 reading missions
-    have been recorded.
   */
 
   if (completedReadingMissions < 2) {
@@ -31,10 +27,6 @@ export function getReadingDifficulty(
     --------------------------------
     LOW OVERALL ACCURACY
     --------------------------------
-
-    If overall accuracy is below 60%,
-    stay at Beginner regardless of
-    mission count.
   */
 
   if (averageAccuracy < 0.6) {
@@ -43,14 +35,12 @@ export function getReadingDifficulty(
 
   /*
     --------------------------------
-    EARLY SKILL EVIDENCE
+    RELIABLE SKILL EVIDENCE
     --------------------------------
 
-    Count only skills that have at least
-    4 answers recorded.
-
-    These are considered reliable enough
-    to influence difficulty decisions.
+    A skill needs at least 4 recorded
+    answers before it influences the
+    difficulty system.
   */
 
   const reliableSkillAccuracies =
@@ -69,14 +59,6 @@ export function getReadingDifficulty(
     --------------------------------
     STRUGGLING SKILL PROTECTION
     --------------------------------
-
-    If any reliably measured skill is
-    below 55%, don't increase difficulty
-    beyond Easy.
-
-    This allows the next missions to keep
-    practising that skill without making
-    the whole experience too hard.
   */
 
   const hasStrugglingReliableSkill =
@@ -93,9 +75,6 @@ export function getReadingDifficulty(
     --------------------------------
     EASY
     --------------------------------
-
-    60%–74% overall accuracy:
-    introduce gentle progression.
   */
 
   if (averageAccuracy < 0.75) {
@@ -106,12 +85,6 @@ export function getReadingDifficulty(
     --------------------------------
     EASY PLUS
     --------------------------------
-
-    Require at least 3 recorded reading
-    missions before moving to Easy+.
-
-    This prevents one or two very strong
-    results from advancing too quickly.
   */
 
   if (
@@ -128,17 +101,6 @@ export function getReadingDifficulty(
     --------------------------------
     MEDIUM READINESS
     --------------------------------
-
-    Medium requires:
-
-    - 5+ reading missions
-    - 90%+ overall accuracy
-    - reading level 2+
-    - at least 2 reliably measured skills
-    - no reliable skill below 70%
-
-    This makes the jump to Medium much
-    more deliberate.
   */
 
   const reliableSkillsAtOrAbove70 =
@@ -170,4 +132,224 @@ export function getReadingDifficulty(
   */
 
   return 'easy-plus'
+}
+
+/*
+  ========================================
+  DIFFICULTY EXPLANATION
+  ========================================
+
+  This is used by Dad Dashboard.
+
+  It explains WHY the adaptive system
+  selected the current difficulty.
+*/
+
+export type DifficultyExplanation = {
+  title: string
+  message: string
+}
+
+export function getDifficultyExplanation(
+  profile: LearningProfile,
+): DifficultyExplanation {
+  const {
+    averageAccuracy,
+    completedReadingMissions,
+    readingLevel,
+    skillProgress,
+  } = profile
+
+  /*
+    --------------------------------
+    STILL COLLECTING DATA
+    --------------------------------
+  */
+
+  if (completedReadingMissions < 2) {
+    return {
+      title:
+        'Still collecting early data',
+      message:
+        'The app keeps the difficulty at Beginner until at least 2 reading missions have been recorded.',
+    }
+  }
+
+  /*
+    --------------------------------
+    LOW OVERALL ACCURACY
+    --------------------------------
+  */
+
+  if (averageAccuracy < 0.6) {
+    return {
+      title:
+        'Building confidence first',
+      message:
+        `Zeke's current average accuracy is ${Math.round(
+          averageAccuracy * 100,
+        )}%. The app is keeping the reading difficulty at Beginner so he can practise the current skills before moving up.`,
+    }
+  }
+
+  /*
+    --------------------------------
+    CHECK RELIABLE SKILLS
+    --------------------------------
+  */
+
+  const reliableSkills =
+    Object.values(skillProgress).filter(
+      (progress) =>
+        progress.total >= 4,
+    )
+
+  const hasStrugglingReliableSkill =
+    reliableSkills.some(
+      (progress) =>
+        progress.correct /
+          progress.total <
+        0.55,
+    )
+
+  if (hasStrugglingReliableSkill) {
+    return {
+      title:
+        'Strengthening a skill before moving up',
+      message:
+        'At least one reading skill with enough recorded answers is below 55% accuracy. The app is keeping the difficulty at Easy while future missions give that skill more practice.',
+    }
+  }
+
+  /*
+    --------------------------------
+    EASY
+    --------------------------------
+  */
+
+  if (averageAccuracy < 0.75) {
+    return {
+      title:
+        'Ready for gentle progression',
+      message:
+        `Zeke's current average accuracy is ${Math.round(
+          averageAccuracy * 100,
+        )}%. The app can introduce Easy missions while continuing to strengthen his reading skills.`,
+    }
+  }
+
+  /*
+    --------------------------------
+    NOT ENOUGH MISSIONS FOR EASY+
+    --------------------------------
+  */
+
+  if (
+    completedReadingMissions < 3
+  ) {
+    return {
+      title:
+        'Doing well — gathering more evidence',
+      message:
+        'The results are strong, but the app waits for at least 3 recorded reading missions before moving to Easy Plus.',
+    }
+  }
+
+  /*
+    --------------------------------
+    EASY PLUS
+    --------------------------------
+  */
+
+  if (averageAccuracy < 0.9) {
+    return {
+      title:
+        'Ready for a little more challenge',
+      message:
+        `Zeke's current average accuracy is ${Math.round(
+          averageAccuracy * 100,
+        )}%. Easy Plus can introduce more sequencing and simple inference while keeping the reading manageable.`,
+    }
+  }
+
+  /*
+    --------------------------------
+    CHECK MEDIUM REQUIREMENTS
+    --------------------------------
+  */
+
+  const reliableSkillAccuracies =
+    reliableSkills.map(
+      (progress) =>
+        progress.correct /
+        progress.total,
+    )
+
+  const reliableSkillsAtOrAbove70 =
+    reliableSkillAccuracies.filter(
+      (accuracy) =>
+        accuracy >= 0.7,
+    ).length
+
+  const allReliableSkillsAtOrAbove70 =
+    reliableSkillAccuracies.length > 0 &&
+    reliableSkillAccuracies.every(
+      (accuracy) =>
+        accuracy >= 0.7,
+    )
+
+  if (
+    completedReadingMissions >= 5 &&
+    averageAccuracy >= 0.9 &&
+    readingLevel >= 2 &&
+    reliableSkillsAtOrAbove70 >= 2 &&
+    allReliableSkillsAtOrAbove70
+  ) {
+    return {
+      title:
+        'Ready for Medium',
+      message:
+        'Zeke has enough completed missions, strong overall accuracy, a higher reading level, and consistent results across multiple reading skills. The app can now introduce Medium missions.',
+    }
+  }
+
+  /*
+    --------------------------------
+    STRONG RESULTS, BUT NOT MEDIUM YET
+    --------------------------------
+  */
+
+  if (readingLevel < 2) {
+    return {
+      title:
+        'Strong results — building reading level',
+      message:
+        'Zeke is performing well, but his adaptive reading level is still Level 1. The app will continue with Easy Plus while building enough evidence for Reading Level 2.',
+    }
+  }
+
+  if (completedReadingMissions < 5) {
+    return {
+      title:
+        'Strong results — gathering more mission data',
+      message:
+        'Zeke is doing very well. The app waits for at least 5 recorded reading missions before considering Medium difficulty.',
+    }
+  }
+
+  if (reliableSkillsAtOrAbove70 < 2) {
+    return {
+      title:
+        'Strong results — checking more skills',
+      message:
+        'Overall accuracy is strong, but the app needs at least two reading skills with enough recorded answers and 70% or better accuracy before moving to Medium.',
+    }
+  }
+
+  return {
+    title:
+      'Building consistent skill strength',
+    message:
+      'Zeke is doing well overall. The app will continue with Easy Plus until the recorded reading skills are consistently strong enough for Medium.',
+  }
 }

@@ -10,14 +10,24 @@ import {
   initialLearningProfile,
   type LearningProfile,
   type LearningSkill,
-  type SkillProgressMap,
 } from '../data/learningProfile'
+
 import {
   player as initialPlayer,
   type Player,
 } from '../data/player'
+
 import { getReadingDifficulty } from '../utils/getReadingDifficulty'
 import { getReadingLevel } from '../utils/getReadingLevel'
+
+/*
+  --------------------------------
+  READING QUESTION RESULT
+  --------------------------------
+
+  This represents one question that
+  was answered during a reading mission.
+*/
 
 export type ReadingQuestionResult = {
   skill: LearningSkill
@@ -29,7 +39,9 @@ type PlayerContextType = {
 
   learningProfile: LearningProfile
 
-  addStars: (amount: number) => void
+  addStars: (
+    amount: number,
+  ) => void
 
   completeMission: (
     missionId: string,
@@ -39,9 +51,27 @@ type PlayerContextType = {
     results: ReadingQuestionResult[],
   ) => void
 
+  /*
+    Used by the Dad Dashboard
+    developer testing buttons.
+  */
+
   simulateReadingResult: (
     results: ReadingQuestionResult[],
   ) => void
+
+  /*
+    NEW:
+    Resets ONLY adaptive learning data.
+
+    It does NOT reset:
+    - stars
+    - completed game missions
+    - Reading Forest progress
+  */
+
+  resetLearningTestData:
+    () => void
 
   recentlyCompletedMissionId:
     | string
@@ -64,49 +94,6 @@ const PLAYER_STORAGE_KEY =
 
 const LEARNING_PROFILE_STORAGE_KEY =
   'dad-and-zeke-learning-profile'
-
-/*
-  --------------------------------
-  LOAD LEARNING PROFILE
-  --------------------------------
-
-  This also protects us if an older
-  saved profile is missing newer fields.
-*/
-
-function loadLearningProfile():
-  LearningProfile {
-  const savedProfile =
-    localStorage.getItem(
-      LEARNING_PROFILE_STORAGE_KEY,
-    )
-
-  if (!savedProfile) {
-    return initialLearningProfile
-  }
-
-  try {
-    const parsed =
-      JSON.parse(savedProfile) as
-        Partial<LearningProfile>
-
-    return {
-      ...initialLearningProfile,
-      ...parsed,
-
-      skillProgress: {
-        ...initialLearningProfile.skillProgress,
-        ...(parsed.skillProgress ?? {}),
-      },
-    }
-  } catch {
-    console.error(
-      'Could not load saved learning profile',
-    )
-
-    return initialLearningProfile
-  }
-}
 
 export function PlayerProvider({
   children,
@@ -148,20 +135,37 @@ export function PlayerProvider({
   const [
     learningProfile,
     setLearningProfile,
-  ] = useState<LearningProfile>(
-    loadLearningProfile,
-  )
+  ] = useState<LearningProfile>(() => {
+    const savedProfile =
+      localStorage.getItem(
+        LEARNING_PROFILE_STORAGE_KEY,
+      )
+
+    if (savedProfile) {
+      try {
+        return JSON.parse(
+          savedProfile,
+        ) as LearningProfile
+      } catch {
+        console.error(
+          'Could not load saved learning profile',
+        )
+      }
+    }
+
+    return initialLearningProfile
+  })
 
   /*
-    --------------------------------
-    TEMPORARY JOURNEY STATE
-    --------------------------------
+    Temporary session state.
 
-    This is NOT saved in localStorage.
+    This tells the Reading Forest that
+    a mission was just completed so
+    Zeke can travel toward the next
+    mission.
 
-    It tells the world map that a
-    mission was just completed so
-    Zeke can travel to the next mission.
+    We intentionally do NOT save this
+    value in localStorage.
   */
 
   const [
@@ -191,17 +195,21 @@ export function PlayerProvider({
   useEffect(() => {
     localStorage.setItem(
       LEARNING_PROFILE_STORAGE_KEY,
-      JSON.stringify(learningProfile),
+      JSON.stringify(
+        learningProfile,
+      ),
     )
   }, [learningProfile])
 
   /*
     --------------------------------
-    ADD STARS
+    STARS
     --------------------------------
   */
 
-  function addStars(amount: number) {
+  function addStars(
+    amount: number,
+  ) {
     setPlayer((current) => ({
       ...current,
 
@@ -212,7 +220,7 @@ export function PlayerProvider({
 
   /*
     --------------------------------
-    COMPLETE MISSION
+    COMPLETE GAME MISSION
     --------------------------------
   */
 
@@ -222,7 +230,7 @@ export function PlayerProvider({
     setPlayer((current) => {
       /*
         Never complete the same
-        mission twice.
+        game mission twice.
       */
 
       if (
@@ -237,8 +245,8 @@ export function PlayerProvider({
         Remember which mission
         was just completed.
 
-        WorldAdventureMap uses this
-        to trigger Zeke's journey.
+        This triggers Zeke's
+        journey on the map.
       */
 
       setRecentlyCompletedMissionId(
@@ -258,58 +266,61 @@ export function PlayerProvider({
 
   /*
     --------------------------------
-    RECORD READING PERFORMANCE
+    UPDATE LEARNING PROFILE
     --------------------------------
 
-    Example input:
+    Both REAL reading missions and
+    DEVELOPER simulations use this
+    function.
 
-    [
-      {
-        skill: 'reading-comprehension',
-        correct: true,
-      },
-      {
-        skill: 'vocabulary',
-        correct: false,
-      },
-    ]
-
-    This updates:
-
-    - completed reading missions
-    - overall accuracy
-    - individual skill progress
-    - adaptive reading level
-    - adaptive difficulty
+    That means our testing system is
+    testing the same adaptive-learning
+    engine used by the real game.
   */
 
-  function recordReadingResult(
+  function updateLearningProfile(
     results: ReadingQuestionResult[],
   ) {
     if (results.length === 0) {
       return
     }
 
-    const correctAnswers =
-      results.filter(
-        (result) =>
-          result.correct,
-      ).length
-
-    const missionAccuracy =
-      correctAnswers /
-      results.length
-
     setLearningProfile(
       (currentProfile) => {
+        /*
+          --------------------------------
+          MISSION ACCURACY
+          --------------------------------
+        */
+
+        const correctAnswers =
+          results.filter(
+            (result) =>
+              result.correct,
+          ).length
+
+        const missionAccuracy =
+          correctAnswers /
+          results.length
+
         const previousMissionCount =
           currentProfile
             .completedReadingMissions
 
         /*
-          --------------------------------
-          OVERALL ACCURACY
-          --------------------------------
+          Calculate cumulative average.
+
+          Example:
+
+          Existing:
+          80% across 2 missions
+
+          New mission:
+          100%
+
+          Result:
+
+          (0.8 × 2 + 1) / 3
         */
 
         const newAverageAccuracy =
@@ -323,85 +334,63 @@ export function PlayerProvider({
 
         /*
           --------------------------------
-          COPY SKILL PROGRESS
+          UPDATE INDIVIDUAL SKILLS
           --------------------------------
         */
 
-        const updatedSkillProgress:
-          SkillProgressMap = {
-          'reading-comprehension': {
-            ...currentProfile
-              .skillProgress[
-              'reading-comprehension'
-            ],
-          },
-
-          vocabulary: {
-            ...currentProfile
-              .skillProgress.vocabulary,
-          },
-
-          sequencing: {
-            ...currentProfile
-              .skillProgress.sequencing,
-          },
-
-          inference: {
-            ...currentProfile
-              .skillProgress.inference,
-          },
-
-          'sentence-building': {
-            ...currentProfile
-              .skillProgress[
-              'sentence-building'
-            ],
-          },
+        const updatedSkillProgress = {
+          ...currentProfile.skillProgress,
         }
 
-        /*
-          --------------------------------
-          UPDATE EACH SKILL
-          --------------------------------
-        */
+        results.forEach(
+          (result) => {
+            const currentSkill =
+              updatedSkillProgress[
+                result.skill
+              ]
 
-        results.forEach((result) => {
-          const currentSkill =
             updatedSkillProgress[
               result.skill
-            ]
+            ] = {
+              correct:
+                currentSkill.correct +
+                (result.correct
+                  ? 1
+                  : 0),
 
-          currentSkill.total += 1
-
-          if (result.correct) {
-            currentSkill.correct += 1
-          }
-        })
+              total:
+                currentSkill.total +
+                1,
+            }
+          },
+        )
 
         /*
-          --------------------------------
-          BUILD UPDATED PROFILE
-          --------------------------------
+          First create the profile
+          containing the new evidence.
         */
 
-        const updatedProfile:
-          LearningProfile = {
-          ...currentProfile,
+        const updatedProfile: LearningProfile =
+          {
+            ...currentProfile,
 
-          completedReadingMissions:
-            previousMissionCount + 1,
+            completedReadingMissions:
+              previousMissionCount + 1,
 
-          averageAccuracy:
-            newAverageAccuracy,
+            averageAccuracy:
+              newAverageAccuracy,
 
-          skillProgress:
-            updatedSkillProgress,
-        }
+            skillProgress:
+              updatedSkillProgress,
+          }
 
         /*
           --------------------------------
-          ADAPT READING LEVEL
+          ADAPTIVE READING LEVEL
           --------------------------------
+
+          Reading Level is calculated
+          from the NEW profile data.
         */
 
         const newReadingLevel =
@@ -409,28 +398,37 @@ export function PlayerProvider({
             updatedProfile,
           )
 
-        const profileWithReadingLevel:
-          LearningProfile = {
-          ...updatedProfile,
+        /*
+          Create another profile with
+          the newly calculated reading
+          level.
 
-          readingLevel:
-            newReadingLevel,
-        }
+          Difficulty can then use that
+          level as part of its decision.
+        */
+
+        const profileWithReadingLevel: LearningProfile =
+          {
+            ...updatedProfile,
+
+            readingLevel:
+              newReadingLevel,
+          }
 
         /*
           --------------------------------
-          ADAPT DIFFICULTY
+          ADAPTIVE DIFFICULTY
           --------------------------------
-
-          Difficulty is calculated AFTER
-          the new reading level so both
-          systems stay connected.
         */
 
         const newDifficulty =
           getReadingDifficulty(
             profileWithReadingLevel,
           )
+
+        /*
+          Final learning profile.
+        */
 
         return {
           ...profileWithReadingLevel,
@@ -444,26 +442,113 @@ export function PlayerProvider({
 
   /*
     --------------------------------
-    SIMULATE READING RESULT
+    REAL READING RESULT
     --------------------------------
 
-    Developer testing only.
+    ReadingMission.tsx uses this
+    after Zeke completes a real
+    reading mission.
+  */
 
-    This sends fake question results
-    through exactly the same adaptive
-    learning engine as a real mission.
+  function recordReadingResult(
+    results: ReadingQuestionResult[],
+  ) {
+    updateLearningProfile(
+      results,
+    )
+  }
 
-    It does NOT:
-    - add stars
-    - complete game missions
-    - change Reading Forest progression
+  /*
+    --------------------------------
+    DEVELOPER SIMULATION
+    --------------------------------
+
+    DadDashboard.tsx uses this.
+
+    IMPORTANT:
+
+    This changes learning data,
+    but it does NOT:
+
+    - award stars
+    - complete Reading Forest missions
+    - change map progress
   */
 
   function simulateReadingResult(
     results: ReadingQuestionResult[],
   ) {
-    recordReadingResult(
+    updateLearningProfile(
       results,
+    )
+  }
+
+  /*
+    --------------------------------
+    RESET LEARNING TEST DATA
+    --------------------------------
+
+    This is intentionally separate
+    from player/game progress.
+
+    It resets:
+
+    - recorded reading missions
+    - average accuracy
+    - reading level
+    - adaptive difficulty
+    - individual skill evidence
+
+    It DOES NOT reset:
+
+    - player stars
+    - completed game missions
+    - Reading Forest progress
+  */
+
+  function resetLearningTestData() {
+    /*
+      Create a fresh copy rather than
+      directly reusing nested objects.
+
+      This prevents accidental sharing
+      of skillProgress references.
+    */
+
+    const freshLearningProfile: LearningProfile =
+      {
+        ...initialLearningProfile,
+
+        skillProgress:
+          Object.fromEntries(
+            Object.entries(
+              initialLearningProfile
+                .skillProgress,
+            ).map(
+              ([skill, progress]) => [
+                skill,
+                {
+                  ...progress,
+                },
+              ],
+            ),
+          ) as LearningProfile['skillProgress'],
+      }
+
+    setLearningProfile(
+      freshLearningProfile,
+    )
+
+    /*
+      Also clear the stored learning
+      profile immediately.
+
+      The useEffect above will then
+      save the fresh profile.
+    */
+
+    localStorage.removeItem(
+      LEARNING_PROFILE_STORAGE_KEY,
     )
   }
 
@@ -493,6 +578,8 @@ export function PlayerProvider({
         recordReadingResult,
 
         simulateReadingResult,
+
+        resetLearningTestData,
 
         recentlyCompletedMissionId,
 
