@@ -8,6 +8,11 @@ import {
   getDifficultyExplanation,
 } from '../utils/getReadingDifficulty'
 import { getNextReadingMissionPlan } from '../utils/getNextReadingMissionPlan'
+import { getReadingMissionSpecification } from '../utils/getReadingMissionSpecification'
+import {
+  validateReadingMission,
+  type GeneratedReadingMission,
+} from '../utils/validateReadingMission'
 /*
   --------------------------------
   FORMAT DIFFICULTY
@@ -110,6 +115,122 @@ function DadDashboard() {
 const nextMissionPlan =
   getNextReadingMissionPlan(
     learningProfile,
+  )
+
+  const nextMissionSpecification =
+  getReadingMissionSpecification(
+    nextMissionPlan,
+    learningProfile.age,
+  )
+
+  const validTestMission: GeneratedReadingMission = {
+  title: 'Rex and the Hidden Trail',
+
+  storyPages: [
+    {
+      pageNumber: 1,
+      text: 'Rex walks through the forest and finds a narrow trail beside a tall tree.',
+    },
+    {
+      pageNumber: 2,
+      text: 'A bright feather lies on the trail. Rex carefully picks it up and looks around.',
+    },
+    {
+      pageNumber: 3,
+      text: 'Rex follows more feathers until he reaches a small clearing near the river.',
+    },
+    {
+      pageNumber: 4,
+      text: 'A friendly bird is waiting there. Rex smiles because he has discovered where the feathers came from.',
+    },
+  ],
+
+  questions: [
+    {
+      id: 'test-vocabulary-1',
+      skill: 'vocabulary',
+      question:
+        'What does narrow mean when describing the trail?',
+      choices: [
+        'Not very wide',
+        'Very noisy',
+        'Very dark',
+      ],
+      correctAnswerIndex: 0,
+    },
+    {
+      id: 'test-vocabulary-2',
+      skill: 'vocabulary',
+      question:
+        'What does discovered mean in the story?',
+      choices: [
+        'Found something',
+        'Lost something',
+        'Broke something',
+      ],
+      correctAnswerIndex: 0,
+    },
+    {
+      id: 'test-inference-1',
+      skill: 'inference',
+      question:
+        'Why were feathers probably lying along the trail?',
+      choices: [
+        'They came from the bird',
+        'Rex painted them',
+        'The river made them',
+      ],
+      correctAnswerIndex: 0,
+    },
+    {
+      id: 'test-comprehension-1',
+      skill: 'reading-comprehension',
+      question:
+        'Where did Rex find the friendly bird?',
+      choices: [
+        'In a clearing near the river',
+        'Inside his house',
+        'On top of a mountain',
+      ],
+      correctAnswerIndex: 0,
+    },
+  ],
+}
+
+const brokenTestMission: GeneratedReadingMission = {
+  title: 'Broken Test Mission',
+
+  storyPages: [
+    {
+      pageNumber: 1,
+      text: 'This is only one story page.',
+    },
+  ],
+
+  questions: [
+    {
+      id: 'broken-question',
+      skill: 'reading-comprehension',
+      question: 'Where is Rex?',
+      choices: [
+        'Forest',
+        'Forest',
+      ],
+      correctAnswerIndex: 8,
+    },
+  ],
+}
+
+const validTestResult =
+  validateReadingMission(
+    validTestMission,
+    nextMissionSpecification,
+  )
+
+const brokenTestResult =
+  validateReadingMission(
+    brokenTestMission,
+    nextMissionSpecification,
   )
   /*
     --------------------------------
@@ -831,7 +952,208 @@ const nextMissionPlan =
         }
       />
     </div>
+{/* QUESTION MIX */}
 
+<div className="mt-6 rounded-3xl border-2 border-green-200 bg-white p-6">
+  <div className="flex items-center gap-3">
+    <span className="text-3xl">
+      🎯
+    </span>
+
+    <div>
+      <h3 className="text-xl font-black text-green-950">
+        Question Mix
+      </h3>
+
+      <p className="mt-1 text-slate-600">
+        How the next mission&apos;s questions
+        will be distributed.
+      </p>
+    </div>
+  </div>
+
+  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+    {Object.entries(
+      nextMissionPlan.questionMix,
+    ).map(([skill, count]) => {
+      const display =
+        skillDisplay[
+          skill as keyof typeof skillDisplay
+        ]
+
+      return (
+        <div
+          key={skill}
+          className="flex items-center justify-between rounded-2xl bg-green-50 px-5 py-4"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">
+              {display?.icon ?? '📚'}
+            </span>
+
+            <span className="font-bold text-slate-900">
+              {display?.name ?? skill}
+            </span>
+          </div>
+
+          <span className="rounded-full bg-white px-4 py-2 text-lg font-black text-green-900 shadow-sm">
+            {count}
+          </span>
+        </div>
+      )
+    })}
+  </div>
+
+  <p className="mt-5 text-sm font-semibold text-slate-500">
+    Total planned questions:{' '}
+    {Object.values(
+      nextMissionPlan.questionMix,
+    ).reduce(
+      (total, count) =>
+        total + count,
+      0,
+    )}
+  </p>
+</div>
+{/* MISSION SPECIFICATION PREVIEW */}
+
+{/* VALIDATOR TEST */}
+
+<div className="mt-6 rounded-3xl border-2 border-purple-200 bg-purple-50 p-6">
+  <div className="flex items-center gap-3">
+    <span className="text-3xl">
+      🛡️
+    </span>
+
+    <div>
+      <h3 className="text-xl font-black text-purple-950">
+        Mission Validator Test
+      </h3>
+
+      <p className="mt-1 text-slate-600">
+        Testing whether generated missions
+        obey the specification.
+      </p>
+    </div>
+  </div>
+
+  <div className="mt-6 grid gap-5 lg:grid-cols-2">
+    <ValidationTestCard
+      title="Valid Test Mission"
+      result={validTestResult}
+    />
+
+    <ValidationTestCard
+      title="Broken Test Mission"
+      result={brokenTestResult}
+    />
+  </div>
+</div>
+
+<div className="mt-6 rounded-3xl border-2 border-blue-200 bg-blue-50 p-6">
+  <div className="flex items-center gap-3">
+    <span className="text-3xl">
+      📋
+    </span>
+
+    <div>
+      <h3 className="text-xl font-black text-blue-950">
+        Mission Specification Preview
+      </h3>
+
+      <p className="mt-1 text-slate-600">
+        These are the rules a future mission
+        generator must follow.
+      </p>
+    </div>
+  </div>
+
+  <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <SpecificationItem
+      label="Learner Age"
+      value={`${nextMissionSpecification.learnerAge}`}
+    />
+
+    <SpecificationItem
+      label="Reading Level"
+      value={`Level ${nextMissionSpecification.readingLevel}`}
+    />
+
+    <SpecificationItem
+      label="Difficulty"
+      value={formatDifficulty(
+        nextMissionSpecification.difficulty,
+      )}
+    />
+
+    <SpecificationItem
+      label="Theme"
+      value={formatDifficulty(
+        nextMissionSpecification.theme,
+      )}
+    />
+
+    <SpecificationItem
+      label="Story Pages"
+      value={`${nextMissionSpecification.storyPages}`}
+    />
+
+    <SpecificationItem
+      label="Maximum Words / Page"
+      value={`${nextMissionSpecification.maximumWordsPerPage}`}
+    />
+
+    <SpecificationItem
+      label="Questions"
+      value={`${nextMissionSpecification.questions}`}
+    />
+
+    <SpecificationItem
+      label="Answer Choices"
+      value={`${nextMissionSpecification.answerChoicesPerQuestion} per question`}
+    />
+
+    <SpecificationItem
+      label="Vocabulary"
+      value={formatDifficulty(
+        nextMissionSpecification.vocabularyLevel,
+      )}
+    />
+  </div>
+
+  <div className="mt-6 rounded-2xl bg-white p-5">
+    <h4 className="font-black text-slate-900">
+      Required Question Rules
+    </h4>
+
+    <div className="mt-4 space-y-2">
+      {nextMissionSpecification.questionRules.map(
+        (rule) => {
+          const display =
+            skillDisplay[
+              rule.skill as keyof typeof skillDisplay
+            ]
+
+          return (
+            <div
+              key={rule.skill}
+              className="flex items-center justify-between gap-4"
+            >
+              <span className="font-semibold text-slate-700">
+                {display?.icon ?? '📚'}{' '}
+                {display?.name ?? rule.skill}
+              </span>
+
+              <span className="font-black text-blue-900">
+                {rule.count}
+              </span>
+            </div>
+          )
+        },
+      )}
+    </div>
+  </div>
+</div>
     {/* WHY */}
 
     <div className="mt-6 rounded-3xl border-2 border-green-200 bg-white p-6">
@@ -1185,6 +1507,78 @@ function MissionPlanCard({
           </p>
         </div>
       </div>
+    </div>
+  )
+}
+
+
+type SpecificationItemProps = {
+  label: string
+  value: string
+}
+
+function SpecificationItem({
+  label,
+  value,
+}: SpecificationItemProps) {
+  return (
+    <div className="rounded-2xl bg-white p-4">
+      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
+
+      <p className="mt-1 text-lg font-black text-slate-900">
+        {value}
+      </p>
+    </div>
+  )
+}
+
+type ValidationTestCardProps = {
+  title: string
+
+  result: {
+    valid: boolean
+    errors: string[]
+  }
+}
+
+function ValidationTestCard({
+  title,
+  result,
+}: ValidationTestCardProps) {
+  return (
+    <div className="rounded-2xl bg-white p-5">
+      <div className="flex items-center justify-between gap-4">
+        <h4 className="font-black text-slate-900">
+          {title}
+        </h4>
+
+        <span className="text-lg font-black">
+          {result.valid
+            ? '✅ PASS'
+            : '❌ REJECTED'}
+        </span>
+      </div>
+
+      {result.errors.length === 0 ? (
+        <p className="mt-4 font-semibold text-green-700">
+          No validation errors.
+        </p>
+      ) : (
+        <div className="mt-4 space-y-2">
+          {result.errors.map(
+            (error, index) => (
+              <p
+                key={`${error}-${index}`}
+                className="text-sm font-semibold text-red-700"
+              >
+                • {error}
+              </p>
+            ),
+          )}
+        </div>
+      )}
     </div>
   )
 }
