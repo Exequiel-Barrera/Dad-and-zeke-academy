@@ -10,14 +10,32 @@ import type {
   --------------------------------
   GENERATED MISSION TYPES
   --------------------------------
-
-  Later, this is the structure we will
-  require the AI generator to return.
 */
 
 export type GeneratedStoryPage = {
   pageNumber: number
   text: string
+}
+
+/*
+  Every generated question must
+  provide evidence from the story.
+
+  storyPage:
+    Which page contains the evidence.
+
+  excerpt:
+    Exact text copied from that page.
+
+  explanation:
+    Why that evidence supports the
+    question / correct answer.
+*/
+
+export type QuestionEvidence = {
+  storyPage: number
+  excerpt: string
+  explanation: string
 }
 
 export type GeneratedReadingQuestion = {
@@ -30,6 +48,8 @@ export type GeneratedReadingQuestion = {
   choices: string[]
 
   correctAnswerIndex: number
+
+  evidence: QuestionEvidence
 }
 
 export type GeneratedReadingMission = {
@@ -69,8 +89,14 @@ function countWords(
 
 /*
   --------------------------------
-  DUPLICATE QUESTIONS
+  NORMALISE TEXT
   --------------------------------
+
+  This lets us compare text while
+  ignoring differences in:
+
+  - uppercase / lowercase
+  - extra spaces
 */
 
 function normaliseText(
@@ -129,9 +155,11 @@ export function validateReadingMission(
 
   mission.storyPages.forEach(
     (page, index) => {
+      const pageNumber = index + 1
+
       if (!page.text.trim()) {
         errors.push(
-          `Story page ${index + 1} is empty.`,
+          `Story page ${pageNumber} is empty.`,
         )
       }
 
@@ -143,16 +171,16 @@ export function validateReadingMission(
         specification.maximumWordsPerPage
       ) {
         errors.push(
-          `Story page ${index + 1} contains ${wordCount} words. Maximum allowed is ${specification.maximumWordsPerPage}.`,
+          `Story page ${pageNumber} contains ${wordCount} words. Maximum allowed is ${specification.maximumWordsPerPage}.`,
         )
       }
 
       if (
         page.pageNumber !==
-        index + 1
+        pageNumber
       ) {
         errors.push(
-          `Story page ${index + 1} has an incorrect page number.`,
+          `Story page ${pageNumber} has an incorrect page number.`,
         )
       }
     },
@@ -184,11 +212,19 @@ export function validateReadingMission(
       const questionNumber =
         index + 1
 
+      /*
+        QUESTION ID
+      */
+
       if (!question.id.trim()) {
         errors.push(
           `Question ${questionNumber} is missing an ID.`,
         )
       }
+
+      /*
+        QUESTION TEXT
+      */
 
       if (!question.question.trim()) {
         errors.push(
@@ -197,7 +233,9 @@ export function validateReadingMission(
       }
 
       /*
-        Exact number of answer choices.
+        --------------------------------
+        ANSWER CHOICE COUNT
+        --------------------------------
       */
 
       if (
@@ -210,7 +248,9 @@ export function validateReadingMission(
       }
 
       /*
-        Empty answer choices.
+        --------------------------------
+        EMPTY ANSWER CHOICES
+        --------------------------------
       */
 
       question.choices.forEach(
@@ -224,8 +264,15 @@ export function validateReadingMission(
       )
 
       /*
-        Correct answer must point to
-        a real answer choice.
+        --------------------------------
+        CORRECT ANSWER INDEX
+        --------------------------------
+
+        Arrays start at 0:
+
+        0 = first answer
+        1 = second answer
+        2 = third answer
       */
 
       if (
@@ -242,8 +289,116 @@ export function validateReadingMission(
       }
 
       /*
-        Prevent duplicate answer
-        choices within a question.
+        --------------------------------
+        EVIDENCE GROUNDING
+        --------------------------------
+      */
+
+      if (!question.evidence) {
+        errors.push(
+          `Question ${questionNumber} is missing story evidence.`,
+        )
+      } else {
+        const evidence =
+          question.evidence
+
+        /*
+          STEP 1:
+          Evidence must reference a
+          real story page.
+        */
+
+        const validEvidencePage =
+          Number.isInteger(
+            evidence.storyPage,
+          ) &&
+          evidence.storyPage >= 1 &&
+          evidence.storyPage <=
+            mission.storyPages.length
+
+        if (!validEvidencePage) {
+          errors.push(
+            `Question ${questionNumber} references an invalid evidence page.`,
+          )
+        }
+
+        /*
+          STEP 2:
+          Evidence must include an
+          exact story excerpt.
+        */
+if (
+  typeof evidence.excerpt !== 'string' ||
+  !evidence.excerpt.trim()
+) {
+  errors.push(
+    `Question ${questionNumber} is missing an evidence excerpt.`,
+  )
+}
+
+        /*
+          STEP 3:
+          Evidence must include an
+          explanation.
+        */
+
+    if (
+  typeof evidence.explanation !== 'string' ||
+  !evidence.explanation.trim()
+) {
+  errors.push(
+    `Question ${questionNumber} is missing an evidence explanation.`,
+  )
+}
+
+        /*
+          --------------------------------
+          LAYER 2:
+          VERIFY THE EXCERPT
+          --------------------------------
+
+          If the page exists and an
+          excerpt was supplied, check
+          that the excerpt actually
+          appears on that story page.
+        */
+
+     if (
+  validEvidencePage &&
+  typeof evidence.excerpt === 'string' &&
+  evidence.excerpt.trim()
+) {
+          const referencedPage =
+            mission.storyPages[
+              evidence.storyPage - 1
+            ]
+
+          const storyText =
+            normaliseText(
+              referencedPage.text,
+            )
+
+          const evidenceExcerpt =
+            normaliseText(
+              evidence.excerpt,
+            )
+
+          if (
+            !storyText.includes(
+              evidenceExcerpt,
+            )
+          ) {
+            errors.push(
+              `Question ${questionNumber}'s evidence excerpt was not found on story page ${evidence.storyPage}.`,
+            )
+          }
+        }
+      }
+
+      /*
+        --------------------------------
+        DUPLICATE ANSWER CHOICES
+        --------------------------------
       */
 
       const normalisedChoices =
@@ -293,7 +448,12 @@ export function validateReadingMission(
 
   const actualSkillCounts =
     mission.questions.reduce<
-      Partial<Record<LearningSkill, number>>
+      Partial<
+        Record<
+          LearningSkill,
+          number
+        >
+      >
     >(
       (counts, question) => {
         counts[question.skill] =
@@ -305,6 +465,11 @@ export function validateReadingMission(
       {},
     )
 
+  /*
+    Check the skills requested by
+    the mission specification.
+  */
+
   for (
     const rule of
     specification.questionRules
@@ -315,7 +480,8 @@ export function validateReadingMission(
       ] ?? 0
 
     if (
-      actualCount !== rule.count
+      actualCount !==
+      rule.count
     ) {
       errors.push(
         `Expected ${rule.count} ${rule.skill} question(s) but received ${actualCount}.`,
@@ -324,8 +490,9 @@ export function validateReadingMission(
   }
 
   /*
-    Catch skills that the specification
-    did not request at all.
+    --------------------------------
+    UNEXPECTED SKILLS
+    --------------------------------
   */
 
   for (
@@ -342,7 +509,8 @@ export function validateReadingMission(
       ] ?? 0
 
     if (
-      actualCount !== expectedCount
+      actualCount !==
+      expectedCount
     ) {
       const alreadyReported =
         specification.questionRules.some(
@@ -380,6 +548,12 @@ export function validateReadingMission(
       'Question IDs must be unique.',
     )
   }
+
+  /*
+    --------------------------------
+    FINAL RESULT
+    --------------------------------
+  */
 
   return {
     valid: errors.length === 0,

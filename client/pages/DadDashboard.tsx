@@ -13,6 +13,7 @@ import {
   validateReadingMission,
   type GeneratedReadingMission,
 } from '../utils/validateReadingMission'
+import { generateReadingMission } from '../utils/generateReadingMission'
 /*
   --------------------------------
   FORMAT DIFFICULTY
@@ -122,6 +123,16 @@ const nextMissionPlan =
     nextMissionPlan,
     learningProfile.age,
   )
+const generatedTestMission =
+  generateReadingMission(
+    nextMissionSpecification,
+  )
+
+  const generatedMissionValidation =
+  validateReadingMission(
+    generatedTestMission,
+    nextMissionSpecification,
+  )
 
   const validTestMission: GeneratedReadingMission = {
   title: 'Rex and the Hidden Trail',
@@ -157,7 +168,16 @@ const nextMissionPlan =
         'Very dark',
       ],
       correctAnswerIndex: 0,
+
+      evidence: {
+  storyPage: 1,
+  excerpt:
+    'Rex walks through the forest and finds a narrow trail beside a tall tree.',
+  explanation:
+    'Page 1 describes the forest trail as narrow.',
+},
     },
+
     {
       id: 'test-vocabulary-2',
       skill: 'vocabulary',
@@ -169,7 +189,16 @@ const nextMissionPlan =
         'Broke something',
       ],
       correctAnswerIndex: 0,
+
+     evidence: {
+  storyPage: 4,
+  excerpt:
+    'Rex smiles because he has discovered where the feathers came from.',
+  explanation:
+    'Page 4 says Rex discovered where the feathers came from.',
+},
     },
+
     {
       id: 'test-inference-1',
       skill: 'inference',
@@ -181,7 +210,16 @@ const nextMissionPlan =
         'The river made them',
       ],
       correctAnswerIndex: 0,
+
+      evidence: {
+  storyPage: 4,
+  excerpt:
+    'A friendly bird is waiting there.',
+  explanation:
+    'The bird at the end of the feather trail supports the inference that the feathers came from the bird.',
+},
     },
+
     {
       id: 'test-comprehension-1',
       skill: 'reading-comprehension',
@@ -193,6 +231,14 @@ const nextMissionPlan =
         'On top of a mountain',
       ],
       correctAnswerIndex: 0,
+
+      evidence: {
+  storyPage: 4,
+  excerpt:
+    'A friendly bird is waiting there.',
+  explanation:
+    'Page 4 says the friendly bird was waiting in the clearing near the river.',
+},
     },
   ],
 }
@@ -209,15 +255,23 @@ const brokenTestMission: GeneratedReadingMission = {
 
   questions: [
     {
-      id: 'broken-question',
-      skill: 'reading-comprehension',
-      question: 'Where is Rex?',
-      choices: [
-        'Forest',
-        'Forest',
-      ],
-      correctAnswerIndex: 8,
-    },
+  id: 'broken-question',
+  skill: 'reading-comprehension',
+  question: 'Where is Rex?',
+  choices: [
+    'Forest',
+    'Forest',
+  ],
+  correctAnswerIndex: 8,
+
+evidence: {
+  storyPage: 1,
+  excerpt:
+    'Rex found a giant purple dragon sleeping under the tree.',
+  explanation:
+    'This supposedly explains where Rex found the dragon.',
+},
+},
   ],
 }
 
@@ -1015,6 +1069,164 @@ const brokenTestResult =
     )}
   </p>
 </div>
+{/* GENERATED MISSION PREVIEW */}
+
+<div className="mt-6 rounded-3xl border-4 border-cyan-300 bg-cyan-50 p-6">
+  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <p className="text-4xl">
+        ⚙️
+      </p>
+
+      <h3 className="mt-2 text-2xl font-black text-cyan-950">
+        Generated Mission Preview
+      </h3>
+
+      <p className="mt-2 text-slate-600">
+        This mission was created automatically
+        from Zeke&apos;s current adaptive mission
+        specification.
+      </p>
+    </div>
+
+    <span className="rounded-full bg-white px-5 py-3 text-lg font-black shadow-sm">
+      {generatedMissionValidation.valid
+        ? '✅ VALIDATED'
+        : '❌ REJECTED'}
+    </span>
+  </div>
+
+  {/* MISSION TITLE */}
+
+  <div className="mt-6 rounded-2xl bg-white p-5">
+    <p className="text-sm font-black uppercase tracking-wide text-slate-500">
+      Mission Title
+    </p>
+
+    <h4 className="mt-2 text-2xl font-black text-slate-900">
+      {generatedTestMission.title}
+    </h4>
+  </div>
+
+  {/* STORY PAGES */}
+
+  <div className="mt-6">
+    <h4 className="text-xl font-black text-cyan-950">
+      📖 Story Pages
+    </h4>
+
+    <div className="mt-4 grid gap-4 md:grid-cols-2">
+      {generatedTestMission.storyPages.map(
+        (page) => (
+          <div
+            key={page.pageNumber}
+            className="rounded-2xl bg-white p-5 shadow-sm"
+          >
+            <p className="text-sm font-black uppercase tracking-wide text-cyan-700">
+              Page {page.pageNumber}
+            </p>
+
+            <p className="mt-3 leading-relaxed text-slate-700">
+              {page.text}
+            </p>
+          </div>
+        ),
+      )}
+    </div>
+  </div>
+
+  {/* QUESTIONS */}
+
+  <div className="mt-8">
+    <h4 className="text-xl font-black text-cyan-950">
+      ❓ Generated Questions
+    </h4>
+
+    <div className="mt-4 space-y-4">
+      {generatedTestMission.questions.map(
+        (question, index) => (
+          <div
+            key={question.id}
+            className="rounded-2xl bg-white p-5 shadow-sm"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="font-black text-slate-900">
+                Question {index + 1}
+              </p>
+
+              <span className="rounded-full bg-cyan-100 px-3 py-1 text-sm font-bold text-cyan-900">
+                {skillDisplay[
+                  question.skill as keyof typeof skillDisplay
+                ]?.name ?? question.skill}
+              </span>
+            </div>
+
+            <p className="mt-3 text-lg font-bold text-slate-800">
+              {question.question}
+            </p>
+
+            <div className="mt-4 space-y-2">
+              {question.choices.map(
+                (choice, choiceIndex) => (
+                  <div
+                    key={`${question.id}-${choiceIndex}`}
+                    className="rounded-xl bg-slate-50 px-4 py-3 text-slate-700"
+                  >
+                    {choiceIndex ===
+                    question.correctAnswerIndex
+                      ? '✅ '
+                      : '○ '}
+                    {choice}
+                  </div>
+                ),
+              )}
+            </div>
+
+            <div className="mt-4 rounded-xl bg-cyan-50 p-4">
+              <p className="text-sm font-black text-cyan-900">
+                Evidence — Story Page{' '}
+                {question.evidence.storyPage}
+              </p>
+
+              <p className="mt-2 text-sm italic text-slate-700">
+                &quot;{question.evidence.excerpt}&quot;
+              </p>
+
+              <p className="mt-2 text-sm text-slate-600">
+                {question.evidence.explanation}
+              </p>
+            </div>
+          </div>
+        ),
+      )}
+    </div>
+  </div>
+
+  {/* VALIDATION ERRORS */}
+
+  {!generatedMissionValidation.valid && (
+    <div className="mt-6 rounded-2xl border-2 border-red-300 bg-red-50 p-5">
+      <h4 className="font-black text-red-900">
+        Validation Errors
+      </h4>
+
+      <div className="mt-3 space-y-2">
+        {generatedMissionValidation.errors.map(
+          (error, index) => (
+            <p
+              key={`${error}-${index}`}
+              className="text-sm font-semibold text-red-700"
+            >
+              • {error}
+            </p>
+          ),
+        )}
+      </div>
+    </div>
+  )}
+</div>
+
+
 {/* MISSION SPECIFICATION PREVIEW */}
 
 {/* VALIDATOR TEST */}
